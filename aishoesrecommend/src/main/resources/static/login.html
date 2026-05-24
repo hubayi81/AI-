@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 — AI鞋类推荐助手</title>
+    <style>
+        :root {
+            --ink: #1A1A2E;
+            --cream: #FEF9F0;
+            --gold: #F5851F;
+            --gold-light: #FFB347;
+            --white: #FFFFFF;
+            --warm-gray: #8C8279;
+            --stripe: #FDE8C8;
+            --danger: #E0554A;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex; min-height: 100vh;
+            font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
+            color: var(--ink);
+        }
+
+        /* ====== 左侧 — 品牌视觉区 ====== */
+        .brand-panel {
+            width: 42%; min-width: 320px;
+            background: var(--ink);
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 80px 56px;
+        }
+        /* 赛道斜条纹 */
+        .brand-panel::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.08;
+            background: repeating-linear-gradient(
+                -32deg,
+                transparent,
+                transparent 8px,
+                var(--gold) 8px,
+                var(--gold) 10px
+            );
+            animation: stripeDrift 20s linear infinite;
+        }
+        @keyframes stripeDrift { to { background-position: 200px 0; } }
+        /* 金色光晕 */
+        .brand-panel::after {
+            content: ''; position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(245,133,31,0.15) 0%, transparent 70%);
+            top: -120px; right: -180px;
+            animation: glowPulse 6s ease-in-out infinite;
+        }
+        @keyframes glowPulse {
+            0%,100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+        .brand-content { position: relative; z-index: 1; }
+        .athlete-number {
+            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-size: 160px; font-weight: 900; line-height: 1;
+            color: rgba(245,133,31,0.18);
+            margin-bottom: -24px; letter-spacing: -8px;
+            animation: fadeInUp 0.8s ease both;
+        }
+        .brand-name {
+            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-size: 36px; font-weight: 900; color: var(--white);
+            letter-spacing: 3px; line-height: 1.2;
+            animation: fadeInUp 0.8s 0.1s ease both;
+        }
+        .brand-name span { color: var(--gold); }
+        .brand-tagline {
+            font-size: 15px; color: rgba(255,255,255,0.45);
+            margin-top: 16px; letter-spacing: 2px;
+            animation: fadeInUp 0.8s 0.2s ease both;
+        }
+        .decorative-line {
+            width: 48px; height: 3px; background: var(--gold);
+            margin-top: 28px; border-radius: 2px;
+            animation: fadeInUp 0.8s 0.25s ease both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ====== 右侧 — 表单区 ====== */
+        .form-panel {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            background: var(--cream); padding: 40px;
+        }
+        .form-card {
+            width: 100%; max-width: 380px;
+            animation: fadeInUp 0.8s 0.3s ease both;
+        }
+        .form-label-small {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
+            color: var(--warm-gray); margin-bottom: 32px;
+        }
+        .form-group {
+            position: relative; margin-bottom: 28px;
+        }
+        .form-input {
+            width: 100%; padding: 14px 0;
+            border: none; border-bottom: 2px solid #E0D6CC;
+            background: transparent; font-size: 16px; color: var(--ink);
+            outline: none; transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+        .form-input::placeholder { color: #C4B8AA; }
+        .form-input:focus { border-bottom-color: var(--gold); }
+        .input-label {
+            position: absolute; left: 0; top: -18px;
+            font-size: 11px; letter-spacing: 2px; color: var(--warm-gray);
+            text-transform: uppercase;
+        }
+        .btn-primary-action {
+            width: 100%; padding: 16px; margin-top: 8px;
+            background: var(--gold); border: none; color: #fff;
+            font-size: 15px; font-weight: 700; letter-spacing: 4px;
+            cursor: pointer; transition: all 0.25s ease;
+            font-family: inherit; text-transform: uppercase;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+        }
+        .btn-primary-action:hover {
+            background: var(--ink); transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(26,26,46,0.25);
+        }
+        .btn-primary-action:active { transform: translateY(0) scale(0.98); }
+        .form-footer {
+            margin-top: 32px; text-align: center; font-size: 13px; color: var(--warm-gray);
+        }
+        .form-footer a {
+            color: var(--ink); font-weight: 700; text-decoration: none;
+            border-bottom: 2px solid var(--gold); padding-bottom: 2px;
+            transition: all 0.2s ease;
+        }
+        .form-footer a:hover { color: var(--gold); border-bottom-color: var(--ink); }
+        .error-msg {
+            background: #FFF0EE; color: var(--danger); padding: 12px 16px;
+            border-left: 3px solid var(--danger); margin-bottom: 24px;
+            font-size: 13px; border-radius: 0 4px 4px 0;
+            animation: shake 0.4s ease;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        /* ====== 响应式 ====== */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .brand-panel { width: 100%; min-width: unset; padding: 48px 32px; min-height: 240px; }
+            .athlete-number { font-size: 100px; }
+            .brand-name { font-size: 26px; }
+            .form-panel { padding: 40px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 左侧品牌区 -->
+<div class="brand-panel">
+    <div class="brand-content">
+        <div class="athlete-number">01</div>
+        <div class="brand-name"><span>AI</span> 鞋类<br>推荐助手</div>
+        <div class="brand-tagline">FIND YOUR PERFECT PAIR</div>
+        <div class="decorative-line"></div>
+    </div>
+</div>
+
+<!-- 右侧表单区 -->
+<div class="form-panel">
+    <div class="form-card">
+        <div class="form-label-small">登录账号</div>
+
+        <div v-if="error" class="error-msg">{{ error }}</div>
+
+        <div class="form-group">
+            <span class="input-label">用户名</span>
+            <input v-model="username" class="form-input" placeholder="输入用户名" @keyup.enter="login">
+        </div>
+        <div class="form-group">
+            <span class="input-label">密码</span>
+            <input v-model="password" type="password" class="form-input" placeholder="输入密码" @keyup.enter="login">
+        </div>
+
+        <button @click="login" class="btn-primary-action">登 录</button>
+
+        <div class="form-footer">
+            还没有账号？<a href="/register.html">立即注册</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue
+createApp({
+    data() { return { username: '', password: '', error: '' } },
+    methods: {
+        async login() {
+            this.error = ''
+            if (!this.username || !this.password) { this.error = '请填写用户名和密码'; return }
+            const form = new URLSearchParams()
+            form.append('username', this.username)
+            form.append('password', this.password)
+            const res = await fetch('/api/user/login', { method: 'POST', body: form })
+            const data = await res.json()
+            if (data.code === 200) { window.location.href = '/index.html' }
+            else { this.error = data.message }
+        }
+    }
+}).mount('body')
+</script>
+</body>
+</html>

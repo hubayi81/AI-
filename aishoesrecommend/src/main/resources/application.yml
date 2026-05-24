@@ -1,0 +1,10 @@
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/aishoes?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+    username: root
+    password: 2335103132cch
+    driver-class-name: com.mysql.cj.jdbc.Driver
