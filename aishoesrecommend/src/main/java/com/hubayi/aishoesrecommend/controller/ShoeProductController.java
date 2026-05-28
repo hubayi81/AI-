@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 public class ShoeProductController {
@@ -63,8 +64,27 @@ public class ShoeProductController {
         // 1. 查全部商品
         List<ShoeProduct> products = service.getAllProducts();
 
+        // 1.5 关键词粗筛：从用户消息提取中文关键词，减少传给 Agent 的数据量
+        Set<String> keywords = new java.util.HashSet<>();
+        for (String ch : req.getMessage().split("")) {
+            if (ch.matches("[\\u4e00-\\u9fa5]")) {
+                keywords.add(ch);
+            }
+        }
+        List<ShoeProduct> filtered = products.stream()
+            .filter(p -> keywords.stream().anyMatch(kw ->
+                p.getName().contains(kw) ||
+                (p.getDescription() != null && p.getDescription().contains(kw))
+            ))
+            .limit(100)
+            .toList();
+        // 如果筛选后太少（< 5），退回到全量前 100 条
+        if (filtered.size() < 5) {
+            filtered = products.stream().limit(100).toList();
+        }
+
         // 2. 转成 Map 列表（Python 那边 tools.py 用 .get() 读字段）
-        List<Map<String, Object>> productMaps = products.stream().map(p -> {
+        List<Map<String, Object>> productMaps = filtered.stream().map(p -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", p.getId());
             map.put("name", p.getName());
@@ -76,6 +96,7 @@ public class ShoeProductController {
             map.put("color", p.getColor());
             map.put("sizeRange", p.getSizeRange());
             map.put("stock", p.getStock());
+            map.put("imageUrl", p.getImageUrl());
             return map;
         }).toList();
 

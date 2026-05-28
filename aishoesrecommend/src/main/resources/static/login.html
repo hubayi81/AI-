@@ -6,14 +6,9 @@
     <title>登录 — AI鞋类推荐助手</title>
     <style>
         :root {
-            --ink: #1A1A2E;
-            --cream: #FEF9F0;
-            --gold: #F5851F;
-            --gold-light: #FFB347;
-            --white: #FFFFFF;
-            --warm-gray: #8C8279;
-            --stripe: #FDE8C8;
-            --danger: #E0554A;
+            --ink: #1A1A2E; --cream: #FEF9F0; --gold: #F5851F;
+            --gold-light: #FFB347; --white: #FFF; --warm-gray: #8C8279;
+            --danger: #E0554A; --border: #E8DFD3;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -22,121 +17,113 @@
             color: var(--ink);
         }
 
-        /* ====== 左侧 — 品牌视觉区 ====== */
-        .brand-panel {
-            width: 42%; min-width: 320px;
-            background: var(--ink);
+        /* ====== 左侧品牌区 ====== */
+        .brand {
+            width: 44%; min-width: 340px; background: var(--ink);
             position: relative; overflow: hidden;
             display: flex; flex-direction: column; justify-content: center;
-            padding: 80px 56px;
+            padding: 80px 64px;
         }
-        /* 赛道斜条纹 */
-        .brand-panel::before {
-            content: ''; position: absolute; inset: 0; opacity: 0.08;
-            background: repeating-linear-gradient(
-                -32deg,
-                transparent,
-                transparent 8px,
-                var(--gold) 8px,
-                var(--gold) 10px
-            );
-            animation: stripeDrift 20s linear infinite;
+        .brand::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.07;
+            background: repeating-linear-gradient(-34deg, transparent, transparent 10px, var(--gold) 10px, var(--gold) 12px);
+            animation: drift 24s linear infinite;
         }
-        @keyframes stripeDrift { to { background-position: 200px 0; } }
-        /* 金色光晕 */
-        .brand-panel::after {
+        @keyframes drift { to { background-position: 240px 0; } }
+        .brand::after {
             content: ''; position: absolute;
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(245,133,31,0.15) 0%, transparent 70%);
-            top: -120px; right: -180px;
-            animation: glowPulse 6s ease-in-out infinite;
+            width: 520px; height: 520px; top: -160px; right: -200px;
+            background: radial-gradient(circle, rgba(245,133,31,0.14) 0%, transparent 70%);
+            animation: glow 6s ease-in-out infinite;
         }
-        @keyframes glowPulse {
-            0%,100% { transform: scale(1); opacity: 0.6; }
-            50% { transform: scale(1.15); opacity: 1; }
+        @keyframes glow {
+            0%,100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.18); opacity: 1; }
         }
         .brand-content { position: relative; z-index: 1; }
-        .athlete-number {
+        .brand-num {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 160px; font-weight: 900; line-height: 1;
-            color: rgba(245,133,31,0.18);
-            margin-bottom: -24px; letter-spacing: -8px;
-            animation: fadeInUp 0.8s ease both;
+            font-size: 150px; font-weight: 900; line-height: 1;
+            color: rgba(245,133,31,0.16); margin-bottom: -20px; letter-spacing: -8px;
         }
-        .brand-name {
+        .brand-title {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 36px; font-weight: 900; color: var(--white);
-            letter-spacing: 3px; line-height: 1.2;
-            animation: fadeInUp 0.8s 0.1s ease both;
+            font-size: 38px; font-weight: 900; color: var(--white);
+            letter-spacing: 3px; line-height: 1.25;
         }
-        .brand-name span { color: var(--gold); }
-        .brand-tagline {
-            font-size: 15px; color: rgba(255,255,255,0.45);
-            margin-top: 16px; letter-spacing: 2px;
-            animation: fadeInUp 0.8s 0.2s ease both;
+        .brand-title span { color: var(--gold); }
+        .brand-sub {
+            font-size: 15px; color: rgba(255,255,255,0.42);
+            margin-top: 18px; letter-spacing: 3px;
         }
-        .decorative-line {
+        .brand-line {
             width: 48px; height: 3px; background: var(--gold);
-            margin-top: 28px; border-radius: 2px;
-            animation: fadeInUp 0.8s 0.25s ease both;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
+            margin-top: 32px; border-radius: 2px;
         }
 
-        /* ====== 右侧 — 表单区 ====== */
-        .form-panel {
+        /* ====== 右侧表单区 ====== */
+        .form-side {
             flex: 1; display: flex; align-items: center; justify-content: center;
             background: var(--cream); padding: 40px;
         }
-        .form-card {
-            width: 100%; max-width: 380px;
-            animation: fadeInUp 0.8s 0.3s ease both;
+        .form-card { width: 100%; max-width: 392px; }
+
+        .form-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 4px;
+            color: var(--warm-gray); margin-bottom: 36px;
         }
-        .form-label-small {
-            font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
-            color: var(--warm-gray); margin-bottom: 32px;
-        }
-        .form-group {
-            position: relative; margin-bottom: 28px;
-        }
-        .form-input {
-            width: 100%; padding: 14px 0;
-            border: none; border-bottom: 2px solid #E0D6CC;
+        .field { position: relative; margin-bottom: 30px; }
+        .field input {
+            width: 100%; padding: 14px 40px 14px 0;
+            border: none; border-bottom: 2px solid var(--border);
             background: transparent; font-size: 16px; color: var(--ink);
-            outline: none; transition: border-color 0.3s ease;
-            font-family: inherit;
+            outline: none; font-family: inherit;
+            transition: border-color 0.3s ease;
         }
-        .form-input::placeholder { color: #C4B8AA; }
-        .form-input:focus { border-bottom-color: var(--gold); }
-        .input-label {
-            position: absolute; left: 0; top: -18px;
-            font-size: 11px; letter-spacing: 2px; color: var(--warm-gray);
-            text-transform: uppercase;
+        .field input::placeholder { color: transparent; }
+        .field label {
+            position: absolute; left: 0; top: 14px;
+            font-size: 16px; color: #C4B8AA;
+            pointer-events: none; transition: all 0.25s ease;
         }
-        .btn-primary-action {
-            width: 100%; padding: 16px; margin-top: 8px;
+        .field input:focus ~ label,
+        .field input:not(:placeholder-shown) ~ label {
+            top: -12px; font-size: 11px; color: var(--gold); letter-spacing: 2px;
+        }
+        .field input:focus { border-bottom-color: var(--gold); }
+        .field .toggle-pw {
+            position: absolute; right: 0; top: 12px;
+            background: none; border: none; cursor: pointer; font-size: 16px;
+            color: var(--warm-gray); padding: 4px;
+            transition: color 0.2s;
+        }
+        .field .toggle-pw:hover { color: var(--ink); }
+
+        .btn-login {
+            width: 100%; padding: 16px; margin-top: 12px;
             background: var(--gold); border: none; color: #fff;
             font-size: 15px; font-weight: 700; letter-spacing: 4px;
-            cursor: pointer; transition: all 0.25s ease;
-            font-family: inherit; text-transform: uppercase;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.25s ease;
             clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+            position: relative; overflow: hidden;
         }
-        .btn-primary-action:hover {
+        .btn-login:hover:not(:disabled) {
             background: var(--ink); transform: translateY(-2px);
             box-shadow: 0 8px 28px rgba(26,26,46,0.25);
         }
-        .btn-primary-action:active { transform: translateY(0) scale(0.98); }
-        .form-footer {
-            margin-top: 32px; text-align: center; font-size: 13px; color: var(--warm-gray);
+        .btn-login:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+        .btn-login:disabled { opacity: 0.65; cursor: not-allowed; }
+        .btn-login .spinner {
+            display: none; width: 18px; height: 18px; border: 2px solid #fff;
+            border-top-color: transparent; border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            position: absolute; left: calc(50% - 9px); top: calc(50% - 9px);
         }
-        .form-footer a {
-            color: var(--ink); font-weight: 700; text-decoration: none;
-            border-bottom: 2px solid var(--gold); padding-bottom: 2px;
-            transition: all 0.2s ease;
-        }
-        .form-footer a:hover { color: var(--gold); border-bottom-color: var(--ink); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-login.loading .btn-text { visibility: hidden; }
+        .btn-login.loading .spinner { display: block; }
+
         .error-msg {
             background: #FFF0EE; color: var(--danger); padding: 12px 16px;
             border-left: 3px solid var(--danger); margin-bottom: 24px;
@@ -145,51 +132,76 @@
         }
         @keyframes shake {
             0%,100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .form-footer {
+            margin-top: 36px; text-align: center; font-size: 13px; color: var(--warm-gray);
+        }
+        .form-footer a {
+            color: var(--ink); font-weight: 700; text-decoration: none;
+            border-bottom: 2px solid var(--gold); padding-bottom: 2px;
+            transition: all 0.2s ease;
+        }
+        .form-footer a:hover { color: var(--gold); border-bottom-color: var(--ink); }
+
+        /* 入场动画 */
+        .anim-1 { animation: fadeUp 0.6s 0.1s ease both; }
+        .anim-2 { animation: fadeUp 0.6s 0.2s ease both; }
+        .anim-3 { animation: fadeUp 0.6s 0.3s ease both; }
+        .anim-4 { animation: fadeUp 0.6s 0.4s ease both; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ====== 响应式 ====== */
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            .brand-panel { width: 100%; min-width: unset; padding: 48px 32px; min-height: 240px; }
-            .athlete-number { font-size: 100px; }
-            .brand-name { font-size: 26px; }
-            .form-panel { padding: 40px 24px; }
+            .brand { width: 100%; min-width: unset; padding: 44px 32px; min-height: 220px; }
+            .brand-num { font-size: 100px; }
+            .brand-title { font-size: 26px; }
+            .form-side { padding: 40px 24px; }
         }
     </style>
 </head>
 <body>
 
-<!-- 左侧品牌区 -->
-<div class="brand-panel">
+<div class="brand">
     <div class="brand-content">
-        <div class="athlete-number">01</div>
-        <div class="brand-name"><span>AI</span> 鞋类<br>推荐助手</div>
-        <div class="brand-tagline">FIND YOUR PERFECT PAIR</div>
-        <div class="decorative-line"></div>
+        <div class="brand-num anim-1">01</div>
+        <div class="brand-title anim-2"><span>AI</span> 鞋类<br>推荐助手</div>
+        <div class="brand-sub anim-2">FIND YOUR PERFECT PAIR</div>
+        <div class="brand-line anim-3"></div>
     </div>
 </div>
 
-<!-- 右侧表单区 -->
-<div class="form-panel">
-    <div class="form-card">
-        <div class="form-label-small">登录账号</div>
+<div class="form-side">
+    <div class="form-card" id="app">
+        <div class="form-label anim-1">登录账号</div>
 
         <div v-if="error" class="error-msg">{{ error }}</div>
 
-        <div class="form-group">
-            <span class="input-label">用户名</span>
-            <input v-model="username" class="form-input" placeholder="输入用户名" @keyup.enter="login">
-        </div>
-        <div class="form-group">
-            <span class="input-label">密码</span>
-            <input v-model="password" type="password" class="form-input" placeholder="输入密码" @keyup.enter="login">
+        <div class="field anim-2">
+            <input id="username" v-model="username" placeholder="用户名" @keyup.enter="login">
+            <label for="username">用户名</label>
         </div>
 
-        <button @click="login" class="btn-primary-action">登 录</button>
+        <div class="field anim-3">
+            <input :type="showPw ? 'text' : 'password'" id="password"
+                   v-model="password" placeholder="密码" @keyup.enter="login">
+            <label for="password">密码</label>
+            <button class="toggle-pw" @click="showPw = !showPw" type="button">
+                {{ showPw ? '🙈' : '👁' }}
+            </button>
+        </div>
 
-        <div class="form-footer">
+        <button @click="login" :disabled="submitting"
+                :class="'btn-login anim-4' + (submitting ? ' loading' : '')">
+            <span class="btn-text">登 录</span>
+            <span class="spinner"></span>
+        </button>
+
+        <div class="form-footer anim-4">
             还没有账号？<a href="/register.html">立即注册</a>
         </div>
     </div>
@@ -199,21 +211,25 @@
 <script>
 const { createApp } = Vue
 createApp({
-    data() { return { username: '', password: '', error: '' } },
+    data() { return { username: '', password: '', error: '', showPw: false, submitting: false } },
     methods: {
         async login() {
             this.error = ''
             if (!this.username || !this.password) { this.error = '请填写用户名和密码'; return }
-            const form = new URLSearchParams()
-            form.append('username', this.username)
-            form.append('password', this.password)
-            const res = await fetch('/api/user/login', { method: 'POST', body: form })
-            const data = await res.json()
-            if (data.code === 200) { window.location.href = '/index.html' }
-            else { this.error = data.message }
+            this.submitting = true
+            try {
+                const form = new URLSearchParams()
+                form.append('username', this.username)
+                form.append('password', this.password)
+                const res = await fetch('/api/user/login', { method: 'POST', body: form })
+                const data = await res.json()
+                if (data.code === 200) { window.location.href = '/index.html' }
+                else { this.error = data.message }
+            } catch(e) { this.error = '网络异常，请重试' }
+            finally { this.submitting = false }
         }
     }
-}).mount('body')
+}).mount('#app')
 </script>
 </body>
 </html>

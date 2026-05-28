@@ -1,7 +1,6 @@
 import json
 
 from langchain.tools import tool
-from pandas.core.window.doc import kwargs_scipy
 
 
 def create_tools(products: list[dict]):
@@ -18,8 +17,11 @@ def create_tools(products: list[dict]):
                 continue
             if kwargs.get("brand") and p.get("brand", "").lower() != kwargs["brand"].lower():
                 continue
-            if kwargs.get("gender") and p.get("gender", "") != kwargs["gender"]:
-                continue
+            if kwargs.get("gender"):
+                gender_map = {"男": "male", "女": "female", "通用": "unisex", "中性": "unisex"}
+                filter_gender = gender_map.get(kwargs["gender"], kwargs["gender"])
+                if p.get("gender", "") != filter_gender:
+                    continue
             if kwargs.get("max_price") and kwargs["max_price"] > 0:
                 if p.get("price", 0) > kwargs["max_price"]:
                     continue

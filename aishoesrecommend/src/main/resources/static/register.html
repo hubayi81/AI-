@@ -7,8 +7,8 @@
     <style>
         :root {
             --ink: #1A1A2E; --cream: #FEF9F0; --gold: #F5851F;
-            --gold-light: #FFB347; --white: #FFFFFF; --warm-gray: #8C8279;
-            --stripe: #FDE8C8; --success: #3C9D70; --danger: #E0554A;
+            --gold-light: #FFB347; --white: #FFF; --warm-gray: #8C8279;
+            --danger: #E0554A; --success: #3C9D70; --border: #E8DFD3;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -16,114 +16,118 @@
             font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
             color: var(--ink);
         }
-        .brand-panel {
-            width: 42%; min-width: 320px; background: var(--ink);
+
+        /* ====== 左侧品牌区 ====== */
+        .brand {
+            width: 44%; min-width: 340px; background: var(--ink);
             position: relative; overflow: hidden;
             display: flex; flex-direction: column; justify-content: center;
-            padding: 80px 56px;
+            padding: 80px 64px;
         }
-        .brand-panel::before {
+        .brand::before {
             content: ''; position: absolute; inset: 0; opacity: 0.06;
-            background: repeating-linear-gradient(
-                32deg,
-                transparent,
-                transparent 10px,
-                var(--gold-light) 10px,
-                var(--gold-light) 12px
-            );
-            animation: stripeDrift 25s linear infinite;
+            background: repeating-linear-gradient(34deg, transparent, transparent 12px, var(--gold-light) 12px, var(--gold-light) 14px);
+            animation: drift 28s linear infinite;
         }
-        @keyframes stripeDrift { to { background-position: -200px 0; } }
-        .brand-panel::after {
+        @keyframes drift { to { background-position: -260px 0; } }
+        .brand::after {
             content: ''; position: absolute;
-            width: 460px; height: 460px;
-            background: radial-gradient(circle, rgba(255,179,71,0.12) 0%, transparent 70%);
-            bottom: -140px; left: -140px;
-            animation: glowPulse 7s ease-in-out infinite;
+            width: 480px; height: 480px; bottom: -160px; left: -180px;
+            background: radial-gradient(circle, rgba(255,179,71,0.11) 0%, transparent 70%);
+            animation: glow 7s ease-in-out infinite;
         }
-        @keyframes glowPulse {
-            0%,100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
+        @keyframes glow {
+            0%,100% { transform: scale(1); opacity: 0.45; }
+            50% { transform: scale(1.22); opacity: 1; }
         }
         .brand-content { position: relative; z-index: 1; }
-        .athlete-number {
+        .brand-num {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 160px; font-weight: 900; line-height: 1;
-            color: rgba(255,179,71,0.15);
-            margin-bottom: -24px; letter-spacing: -8px;
-            animation: fadeInUp 0.8s ease both;
+            font-size: 150px; font-weight: 900; line-height: 1;
+            color: rgba(255,179,71,0.13); margin-bottom: -20px; letter-spacing: -8px;
         }
-        .brand-name {
+        .brand-title {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 36px; font-weight: 900; color: var(--white);
-            letter-spacing: 3px; line-height: 1.2;
-            animation: fadeInUp 0.8s 0.1s ease both;
+            font-size: 38px; font-weight: 900; color: var(--white);
+            letter-spacing: 3px; line-height: 1.25;
         }
-        .brand-name span { color: var(--gold-light); }
-        .brand-tagline {
-            font-size: 15px; color: rgba(255,255,255,0.45);
-            margin-top: 16px; letter-spacing: 2px;
-            animation: fadeInUp 0.8s 0.2s ease both;
+        .brand-title span { color: var(--gold-light); }
+        .brand-sub {
+            font-size: 15px; color: rgba(255,255,255,0.42);
+            margin-top: 18px; letter-spacing: 3px;
         }
-        .decorative-line {
+        .brand-line {
             width: 48px; height: 3px; background: var(--gold-light);
-            margin-top: 28px; border-radius: 2px;
-            animation: fadeInUp 0.8s 0.25s ease both;
+            margin-top: 32px; border-radius: 2px;
         }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .form-panel {
+
+        /* ====== 右侧表单区 ====== */
+        .form-side {
             flex: 1; display: flex; align-items: center; justify-content: center;
             background: var(--cream); padding: 40px;
         }
-        .form-card {
-            width: 100%; max-width: 380px;
-            animation: fadeInUp 0.8s 0.3s ease both;
+        .form-card { width: 100%; max-width: 392px; }
+
+        .form-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 4px;
+            color: var(--warm-gray); margin-bottom: 36px;
         }
-        .form-label-small {
-            font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
-            color: var(--warm-gray); margin-bottom: 32px;
-        }
-        .form-group { position: relative; margin-bottom: 28px; }
-        .form-input {
-            width: 100%; padding: 14px 0;
-            border: none; border-bottom: 2px solid #E0D6CC;
+        .field { position: relative; margin-bottom: 30px; }
+        .field input {
+            width: 100%; padding: 14px 40px 14px 0;
+            border: none; border-bottom: 2px solid var(--border);
             background: transparent; font-size: 16px; color: var(--ink);
-            outline: none; transition: border-color 0.3s ease;
-            font-family: inherit;
+            outline: none; font-family: inherit;
+            transition: border-color 0.3s ease;
         }
-        .form-input::placeholder { color: #C4B8AA; }
-        .form-input:focus { border-bottom-color: var(--gold); }
-        .input-label {
-            position: absolute; left: 0; top: -18px;
-            font-size: 11px; letter-spacing: 2px; color: var(--warm-gray);
-            text-transform: uppercase;
+        .field input::placeholder { color: transparent; }
+        .field label {
+            position: absolute; left: 0; top: 14px;
+            font-size: 16px; color: #C4B8AA;
+            pointer-events: none; transition: all 0.25s ease;
         }
-        .btn-primary-action {
-            width: 100%; padding: 16px; margin-top: 8px;
+        .field input:focus ~ label,
+        .field input:not(:placeholder-shown) ~ label {
+            top: -12px; font-size: 11px; color: var(--gold); letter-spacing: 2px;
+        }
+        .field input:focus { border-bottom-color: var(--gold); }
+        .field .toggle-pw {
+            position: absolute; right: 0; top: 12px;
+            background: none; border: none; cursor: pointer; font-size: 16px;
+            color: var(--warm-gray); padding: 4px;
+        }
+        .field .toggle-pw:hover { color: var(--ink); }
+        .field .hint {
+            position: absolute; right: 0; top: -16px;
+            font-size: 10px; color: var(--warm-gray); letter-spacing: 1px;
+        }
+
+        .btn-register {
+            width: 100%; padding: 16px; margin-top: 12px;
             background: var(--gold); border: none; color: #fff;
             font-size: 15px; font-weight: 700; letter-spacing: 4px;
-            cursor: pointer; transition: all 0.25s ease;
-            font-family: inherit; text-transform: uppercase;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.25s ease;
             clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+            position: relative; overflow: hidden;
         }
-        .btn-primary-action:hover {
+        .btn-register:hover:not(:disabled) {
             background: var(--ink); transform: translateY(-2px);
             box-shadow: 0 8px 28px rgba(26,26,46,0.25);
         }
-        .btn-primary-action:active { transform: translateY(0) scale(0.98); }
-        .form-footer {
-            margin-top: 32px; text-align: center; font-size: 13px; color: var(--warm-gray);
+        .btn-register:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+        .btn-register:disabled { opacity: 0.65; cursor: not-allowed; }
+        .btn-register .spinner {
+            display: none; width: 18px; height: 18px; border: 2px solid #fff;
+            border-top-color: transparent; border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            position: absolute; left: calc(50% - 9px); top: calc(50% - 9px);
         }
-        .form-footer a {
-            color: var(--ink); font-weight: 700; text-decoration: none;
-            border-bottom: 2px solid var(--gold); padding-bottom: 2px;
-            transition: all 0.2s ease;
-        }
-        .form-footer a:hover { color: var(--gold); border-bottom-color: var(--ink); }
-        .toast-msg {
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-register.loading .btn-text { visibility: hidden; }
+        .btn-register.loading .spinner { display: block; }
+
+        .toast {
             padding: 12px 16px; margin-bottom: 24px; font-size: 13px;
             border-radius: 0 4px 4px 0;
         }
@@ -136,47 +140,86 @@
         }
         @keyframes shake {
             0%,100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
+        .form-footer {
+            margin-top: 36px; text-align: center; font-size: 13px; color: var(--warm-gray);
+        }
+        .form-footer a {
+            color: var(--ink); font-weight: 700; text-decoration: none;
+            border-bottom: 2px solid var(--gold); padding-bottom: 2px;
+            transition: all 0.2s ease;
+        }
+        .form-footer a:hover { color: var(--gold); border-bottom-color: var(--ink); }
+
+        .anim-1 { animation: fadeUp 0.6s 0.1s ease both; }
+        .anim-2 { animation: fadeUp 0.6s 0.2s ease both; }
+        .anim-3 { animation: fadeUp 0.6s 0.3s ease both; }
+        .anim-4 { animation: fadeUp 0.6s 0.4s ease both; }
+        .anim-5 { animation: fadeUp 0.6s 0.5s ease both; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media (max-width: 768px) {
             body { flex-direction: column; }
-            .brand-panel { width: 100%; min-width: unset; padding: 48px 32px; min-height: 240px; }
-            .athlete-number { font-size: 100px; }
-            .brand-name { font-size: 26px; }
-            .form-panel { padding: 40px 24px; }
+            .brand { width: 100%; min-width: unset; padding: 44px 32px; min-height: 220px; }
+            .brand-num { font-size: 100px; }
+            .brand-title { font-size: 26px; }
+            .form-side { padding: 40px 24px; }
         }
     </style>
 </head>
 <body>
 
-<div class="brand-panel">
+<div class="brand">
     <div class="brand-content">
-        <div class="athlete-number">02</div>
-        <div class="brand-name"><span>加入</span><br>我们的队伍</div>
-        <div class="brand-tagline">START YOUR JOURNEY</div>
-        <div class="decorative-line"></div>
+        <div class="brand-num anim-1">02</div>
+        <div class="brand-title anim-2"><span>加入</span><br>我们的队伍</div>
+        <div class="brand-sub anim-2">START YOUR JOURNEY</div>
+        <div class="brand-line anim-3"></div>
     </div>
 </div>
 
-<div class="form-panel">
-    <div class="form-card">
-        <div class="form-label-small">创建账号</div>
+<div class="form-side">
+    <div class="form-card" id="app">
+        <div class="form-label anim-1">创建账号</div>
 
-        <div v-if="msg" :class="msgType + ' toast-msg'">{{ msg }}</div>
+        <div v-if="msg" :class="msgType + ' toast'">{{ msg }}</div>
 
-        <div class="form-group">
-            <span class="input-label">用户名</span>
-            <input v-model="username" class="form-input" placeholder="输入用户名" @keyup.enter="register">
-        </div>
-        <div class="form-group">
-            <span class="input-label">密码（至少6位）</span>
-            <input v-model="password" type="password" class="form-input" placeholder="输入密码" @keyup.enter="register">
+        <div class="field anim-2">
+            <input id="username" v-model="username" placeholder="用户名" @keyup.enter="register">
+            <label for="username">用户名</label>
         </div>
 
-        <button @click="register" class="btn-primary-action">注 册</button>
+        <div class="field anim-3">
+            <input :type="showPw ? 'text' : 'password'" id="password"
+                   v-model="password" placeholder="密码" @keyup.enter="register">
+            <label for="password">密码</label>
+            <span class="hint">{{ password.length }}/6+</span>
+            <button class="toggle-pw" @click="showPw = !showPw" type="button">
+                {{ showPw ? '🙈' : '👁' }}
+            </button>
+        </div>
 
-        <div class="form-footer">
+        <div class="field anim-4">
+            <input :type="showPw2 ? 'text' : 'password'" id="confirm"
+                   v-model="confirm" placeholder="确认密码" @keyup.enter="register">
+            <label for="confirm">确认密码</label>
+            <button class="toggle-pw" @click="showPw2 = !showPw2" type="button">
+                {{ showPw2 ? '🙈' : '👁' }}
+            </button>
+        </div>
+
+        <button @click="register" :disabled="submitting"
+                :class="'btn-register anim-5' + (submitting ? ' loading' : '')">
+            <span class="btn-text">注 册</span>
+            <span class="spinner"></span>
+        </button>
+
+        <div class="form-footer anim-5">
             已有账号？<a href="/login.html">去登录</a>
         </div>
     </div>
@@ -186,24 +229,43 @@
 <script>
 const { createApp } = Vue
 createApp({
-    data() { return { username: '', password: '', msg: '', msgType: 'toast-error' } },
+    data() {
+        return {
+            username: '', password: '', confirm: '',
+            msg: '', msgType: 'toast-error',
+            showPw: false, showPw2: false, submitting: false
+        }
+    },
     methods: {
         async register() {
             this.msg = ''
-            if (!this.username || !this.password) { this.msg = '请填写用户名和密码'; this.msgType = 'toast-error'; return }
-            if (this.password.length < 6) { this.msg = '密码不能少于6位'; this.msgType = 'toast-error'; return }
-            const form = new URLSearchParams()
-            form.append('username', this.username)
-            form.append('password', this.password)
-            const res = await fetch('/api/user/register', { method: 'POST', body: form })
-            const data = await res.json()
-            if (data.code === 200) {
-                this.msg = '注册成功，即将跳转……'; this.msgType = 'toast-success'
-                setTimeout(() => { window.location.href = '/login.html' }, 1500)
-            } else { this.msg = data.message; this.msgType = 'toast-error' }
+            if (!this.username || !this.password || !this.confirm) {
+                this.msg = '请填写所有字段'; this.msgType = 'toast-error'; return
+            }
+            if (this.password.length < 6) {
+                this.msg = '密码不能少于6位'; this.msgType = 'toast-error'; return
+            }
+            if (this.password !== this.confirm) {
+                this.msg = '两次密码不一致'; this.msgType = 'toast-error'; return
+            }
+            this.submitting = true
+            try {
+                const form = new URLSearchParams()
+                form.append('username', this.username)
+                form.append('password', this.password)
+                const res = await fetch('/api/user/register', { method: 'POST', body: form })
+                const data = await res.json()
+                if (data.code === 200) {
+                    this.msg = '注册成功，正在跳转……'; this.msgType = 'toast-success'
+                    setTimeout(() => { window.location.href = '/login.html' }, 1500)
+                } else {
+                    this.msg = data.message; this.msgType = 'toast-error'
+                }
+            } catch(e) { this.msg = '网络异常，请重试'; this.msgType = 'toast-error' }
+            finally { this.submitting = false }
         }
     }
-}).mount('body')
+}).mount('#app')
 </script>
 </body>
 </html>
