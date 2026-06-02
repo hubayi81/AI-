@@ -3,16 +3,16 @@ import json
 from langchain.tools import tool
 
 
-def create_tools(products: list[dict]):
+def create_tools(products: list[dict], retriever=None):
     """
-    工厂函数：接收本次请求的商品列表，
+    工厂函数：接收本次请求的商品列表 + 语义检索器，
     返回四个工具函数（商品数据通过闭包注入，不用全局变量）
     """
 
-    # 内部筛选函数——只有 create_tools 内部的工具能调用
-    def _filter(**kwargs):
+    def _apply_filters(items: list[dict], **kwargs) -> list[dict]:
+        """对候选商品列表施加结构化过滤（gender/category/brand/price）"""
         results = []
-        for p in products:
+        for p in items:
             if kwargs.get("category") and p.get("category", "") != kwargs["category"]:
                 continue
             if kwargs.get("brand") and p.get("brand", "").lower() != kwargs["brand"].lower():
@@ -28,31 +28,32 @@ def create_tools(products: list[dict]):
             if kwargs.get("min_price") and kwargs["min_price"] > 0:
                 if p.get("price", 0) < kwargs["min_price"]:
                     continue
-            if kwargs.get("keyword"):
-                kw = kwargs["keyword"].lower()
-                desc = p.get("description", "").lower()
-                name = p.get("name", "").lower()
-                if kw not in desc and kw not in name:
-                    continue
             results.append(p)
-        return results[:8]
+        return results
 
     @tool
     def search_products(keyword: str = "", category: str = "", brand: str = "",
                         gender: str = "", min_price: float = 0, max_price: float = 0) -> str:
-        """在商品库中搜索鞋款。参数：
-        keyword: 功能关键词，如缓震、透气、轻量、宽楦
+        """在商品库中语义搜索鞋款。参数：
+        keyword: 需求描述，如"缓震好适合膝盖不好的人"、"轻便透气夏天穿"
         category: 鞋类，如跑鞋、运动鞋、篮球鞋、休闲鞋
         brand: 品牌名
         gender: 性别 male/female/unisex
         min_price: 最低预算
         max_price: 最高预算
         至少填一个条件。"""
-        items = _filter(
-            keyword=keyword, category=category, brand=brand,
+        # 有 keyword → 用语义检索获取候选集；无 keyword → 全量候选
+        if keyword and retriever:
+            candidates = retriever.search(keyword, top_k=30)
+        else:
+            candidates = products
+
+        items = _apply_filters(
+            candidates,
+            category=category, brand=brand,
             gender=gender, min_price=min_price, max_price=max_price
         )
-        return json.dumps(items, ensure_ascii=False)
+        return json.dumps(items[:8], ensure_ascii=False)
 
     @tool
     def analyze_outfit(top_wear: str = "", bottom_wear: str = "",
@@ -93,8 +94,13 @@ def create_tools(products: list[dict]):
 
         cat = style_to_category.get(style, "")
         kw = occasion_to_keyword.get(occasion, "")
-        items = _filter(category=cat, keyword=kw)
-        return json.dumps(items, ensure_ascii=False)
+        # 穿搭场景用语义检索
+        if kw and retriever:
+            candidates = retriever.search(kw, top_k=20)
+        else:
+            candidates = products
+        items = _apply_filters(candidates, category=cat)
+        return json.dumps(items[:8], ensure_ascii=False)
 
     @tool
     def compare_shoes(product_id_1: int, product_id_2: int) -> str:

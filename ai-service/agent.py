@@ -6,6 +6,7 @@ from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage, AIMessage
 
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
+from retriever import ShoeRetriever
 from tools import create_tools
 
 # ===== 1. LLM 客户端 =====
@@ -59,8 +60,9 @@ def process_message(conversation_id: str | None, user_message: str,
     # 4a. 获取历史
     history, conversation_id = _get_history(conversation_id)
 
-    # 4b. 为本轮创建工具（闭包注入商品数据）
-    tools = create_tools(products)
+    # 4b. 构建语义检索器 + 工具
+    retriever = ShoeRetriever(products)
+    tools = create_tools(products, retriever)
 
     # 4c. 创建 Agent
     agent = create_agent(llm, tools, system_prompt=SYSTEM_PROMPT)
