@@ -5,24 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI鞋类商品推荐助手</title>
     <style>
+        /* ===== Design Tokens ===== */
         :root {
-            --ink: #1A1A2E; --cream: #FEF9F0; --gold: #F5851F;
-            --gold-light: #FFB347; --white: #FFF; --warm-gray: #8C8279;
-            --border: #E8DFD3; --success: #3C9D70; --danger: #E0554A;
+            --ink: #1A1A2E; --cream: #FBF8F3; --gold: #F5851F;
+            --gold-light: #FFB347; --white: #FFF; --warm-gray: #91887A;
+            --border: #E8E0D3; --success: #3C9D70; --danger: #E0554A;
             --sidebar-w: 220px;
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --glass-bg: rgba(255,255,255,0.72);
+            --glass-border: rgba(255,255,255,0.55);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: var(--cream);
             font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
             color: var(--ink); min-height: 100vh;
+            /* 奶油色背景加一层微妙的布纹噪点（通过径向渐变模拟） */
+            background-image: radial-gradient(ellipse at 60% 0%, rgba(245,133,31,0.04) 0%, transparent 50%);
         }
 
-        /* ====== 顶部导航栏 ====== */
+        /* ===== 顶栏（玻璃态） ===== */
         .nav-bar {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(26,26,46,0.94); backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(26,26,46,0.88); backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             padding: 0 40px; height: 60px;
             display: flex; align-items: center; justify-content: space-between;
             border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -34,35 +41,23 @@
         }
         .nav-logo-dot {
             width: 8px; height: 8px; background: var(--gold);
-            animation: dotPulse 1.5s ease-in-out infinite;
+            animation: dotPulse 1.5s ease-in-out infinite; border-radius: 50%;
         }
-        @keyframes dotPulse {
-            0%,100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.8); opacity: 0.4; }
-        }
+        @keyframes dotPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.8);opacity:.4} }
         .nav-right { display: flex; align-items: center; gap: 24px; }
         .btn-out {
             background: transparent; border: 1px solid rgba(255,255,255,0.18);
             color: rgba(255,255,255,0.5); font-size: 12px; padding: 6px 20px;
             cursor: pointer; letter-spacing: 2px; font-family: inherit;
-            transition: all 0.25s ease;
+            transition: all 0.3s var(--ease-out-expo);
         }
         .btn-out:hover { border-color: var(--danger); color: var(--danger); }
 
-        /* ====== 滑动侧边栏 ====== */
-        .sidebar-wrap {
-            position: fixed; left: 0; top: 0; bottom: 0; z-index: 300;
-            display: flex;
-        }
-        .sidebar-trigger {
-            width: 36px; /* 鼠标触碰热区，36px 方便触发 */
-            height: 100%; flex-shrink: 0;
-            position: relative;
-        }
-        /* 热区上的视觉提示条 */
+        /* ===== 滑动侧边栏 ===== */
+        .sidebar-wrap { position: fixed; left: 0; top: 0; bottom: 0; z-index: 300; display: flex; }
+        .sidebar-trigger { width: 36px; height: 100%; flex-shrink: 0; position: relative; }
         .sidebar-trigger::after {
-            content: '';
-            position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+            content: ''; position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
             width: 4px; height: 48px; border-radius: 0 3px 3px 0;
             background: var(--gold); opacity: 0.5; transition: opacity 0.3s;
         }
@@ -72,23 +67,17 @@
             display: flex; flex-direction: column; padding: 28px 0 20px;
             overflow-y: auto; overflow-x: hidden;
             margin-left: calc(-1 * (var(--sidebar-w) + 36px));
-            transition: margin-left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            transition: margin-left 0.4s var(--ease-out-expo);
             box-shadow: 4px 0 24px rgba(0,0,0,0.25);
         }
         .sidebar-wrap:hover .sidebar { margin-left: 0; }
         .sidebar-wrap:hover .sidebar-trigger::after { opacity: 0; }
-
         .sidebar-logo {
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
             font-size: 17px; font-weight: 900; color: var(--white); letter-spacing: 2px;
             display: flex; align-items: center; gap: 10px; padding: 0 24px 32px;
         }
-        .sidebar-logo-dot {
-            width: 8px; height: 8px; background: var(--gold); flex-shrink: 0;
-            animation: dotPulse 1.5s ease-in-out infinite;
-        }
-
-        /* 用户头像区 */
+        .sidebar-logo-dot { width:8px; height:8px; background:var(--gold); flex-shrink:0; animation:dotPulse 1.5s ease-in-out infinite; border-radius:50%; }
         .sidebar-user {
             display: flex; align-items: center; gap: 12px;
             padding: 0 24px 24px; margin-bottom: 24px; cursor: pointer;
@@ -97,382 +86,397 @@
         .sidebar-user:hover { opacity: 0.8; }
         .user-avatar {
             width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
-            background: var(--gold); color: var(--white);
-            display: flex; align-items: center; justify-content: center;
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            box-shadow: 0 0 16px rgba(245,133,31,0.35);
+            color: var(--white); display: flex; align-items: center; justify-content: center;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
             font-size: 18px; font-weight: 900;
         }
         .user-info { flex: 1; min-width: 0; }
-        .user-name {
-            font-size: 14px; font-weight: 700; color: var(--white); line-height: 1.3;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .user-role {
-            font-size: 11px; color: var(--gold-light); letter-spacing: 1px;
-        }
-
-        /* 导航菜单 */
+        .user-name { font-size: 14px; font-weight: 700; color: var(--white); line-height: 1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .user-role { font-size: 11px; color: var(--gold-light); letter-spacing: 1px; }
         .sidebar-nav { flex: 1; padding: 0 14px; display: flex; flex-direction: column; gap: 4px; }
-        .sidebar-nav .nav-item {
+        .sidebar-nav .nav-item, .sidebar-bottom .nav-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 10px; font-size: 14px; font-weight: 600; font-family: inherit;
             letter-spacing: 1px; cursor: pointer; border: none; background: transparent;
-            color: rgba(255,255,255,0.48); transition: all 0.25s ease; border-radius: 8px;
-            text-align: left; width: 100%;
+            color: rgba(255,255,255,0.48); transition: all 0.3s var(--ease-out-expo);
+            border-radius: 8px; text-align: left; width: 100%;
         }
-        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
-        .sidebar-nav .nav-item.active {
-            background: rgba(245,133,31,0.14); color: var(--gold-light);
-            box-shadow: inset 0 0 0 1px rgba(245,133,31,0.2);
-        }
+        .sidebar-nav .nav-item:hover { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.8); }
+        .sidebar-nav .nav-item.active { background:rgba(245,133,31,0.14); color:var(--gold-light); box-shadow:inset 0 0 0 1px rgba(245,133,31,0.2); }
         .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
-
         .sidebar-bottom { padding: 0 14px; margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
         .sidebar-bottom .nav-item { color: rgba(255,255,255,0.35); }
         .sidebar-bottom .nav-item:hover { color: var(--danger); }
 
-        /* ====== Hero ====== */
+        /* ===== Hero（极简轻奢） ===== */
         .hero {
-            max-width: 1040px; margin: 0 auto; padding: 40px 40px 28px;
+            max-width: 1040px; margin: 0 auto; padding: 48px 40px 32px;
             display: flex; align-items: flex-end; justify-content: space-between;
             flex-wrap: wrap; gap: 24px;
         }
         .hero-left h1 {
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: clamp(28px, 5vw, 40px); font-weight: 900;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+            font-size: clamp(28px,5vw,40px); font-weight: 900;
             line-height: 1.15; letter-spacing: -1px;
         }
-        .hero-left h1 em { font-style: normal; color: var(--gold); }
-        .hero-left p { font-size: 14px; color: var(--warm-gray); margin-top: 8px; letter-spacing: 1px; }
-        .hero-stats { display: flex; gap: 40px; }
-        .stat-num {
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 34px; font-weight: 900; line-height: 1; color: var(--ink);
+        .hero-left h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .stat-num.accent { color: var(--gold); }
+        .hero-left p { font-size: 14px; color: var(--warm-gray); margin-top: 8px; letter-spacing: 2px; }
+        .hero-stats { display: flex; gap: 40px; }
+        .stat-item { text-align: center; }
+        .stat-num {
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+            font-size: 36px; font-weight: 900; line-height: 1; color: var(--ink);
+            /* 等宽数字防抖动 */
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-num.accent {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
         .stat-label { font-size: 11px; color: var(--warm-gray); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
 
-        /* ====== Tab 切换 ====== */
-        .tab-bar {
-            max-width: 1040px; margin: 0 auto; padding: 0 40px 0;
-            display: flex; gap: 0; border-bottom: 2px solid var(--border);
-        }
+        /* ===== Tab 切换 ===== */
+        .tab-bar { max-width: 1040px; margin: 0 auto; padding: 0 40px 0; display: flex; gap: 0; border-bottom: 2px solid var(--border); }
         .tab-btn {
             padding: 14px 32px; font-size: 14px; font-weight: 700; font-family: inherit;
-            letter-spacing: 1px; cursor: pointer; transition: all 0.25s ease;
+            letter-spacing: 1px; cursor: pointer; transition: all 0.3s var(--ease-out-expo);
             border: none; background: transparent; color: var(--warm-gray);
             position: relative; top: 2px;
         }
         .tab-btn.active { color: var(--ink); border-bottom: 2px solid var(--gold); }
         .tab-btn:hover:not(.active) { color: var(--ink); }
 
-        /* ====== Tab 内容区 ====== */
+        /* Tab 过渡动画 */
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: block; animation: tabIn 0.35s var(--ease-out-expo) both; }
+        @keyframes tabIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-        /* ====== AI 对话 ====== */
-        .chat-wrapper {
-            max-width: 800px; margin: 0 auto; padding: 0 20px;
-            display: flex; flex-direction: column; height: calc(100vh - 220px);
-        }
-        .chat-messages {
-            flex: 1; overflow-y: auto; padding: 24px 0;
-            display: flex; flex-direction: column; gap: 20px;
-        }
+        /* ===== AI 对话 ===== */
+        .chat-wrapper { max-width: 800px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; height: calc(100vh - 220px); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 24px 0; display: flex; flex-direction: column; gap: 20px; }
         .chat-messages::-webkit-scrollbar { width: 4px; }
         .chat-messages::-webkit-scrollbar-thumb { background: #D6CBB8; border-radius: 2px; }
-
-        .msg-row { display: flex; gap: 12px; animation: msgIn 0.35s ease both; }
+        .msg-row { display: flex; gap: 12px; animation: msgPop 0.4s var(--ease-out-back) both; }
         .msg-row.user { flex-direction: row-reverse; }
-        @keyframes msgIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes msgPop { from{opacity:0;transform:scale(0.92) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
         .msg-avatar {
             width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900;
         }
         .ai .msg-avatar { background: #FFF4E8; color: var(--gold); font-size: 18px; }
         .user .msg-avatar { background: var(--ink); color: var(--white); }
-        .msg-bubble { max-width: 75%; padding: 16px 20px; line-height: 1.7; font-size: 14px; }
-        .ai .msg-bubble { background: var(--white); color: var(--ink); }
-        .user .msg-bubble { background: var(--ink); color: var(--white); }
-
-        .rec-cards { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+        .msg-bubble {
+            max-width: 75%; padding: 16px 20px; line-height: 1.7; font-size: 14px;
+            /* 玻璃态气泡 */
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        .ai .msg-bubble {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 2px 16px 16px 16px;
+            box-shadow: 0 4px 24px rgba(44,36,22,0.05);
+        }
+        .user .msg-bubble {
+            background: var(--ink); color: var(--white);
+            border-radius: 16px 2px 16px 16px;
+            box-shadow: 0 4px 20px rgba(26,26,46,0.18);
+        }
+        .rec-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
         .rec-card {
             display: flex; align-items: center; gap: 14px;
-            background: #FAF7F2; padding: 14px 16px;
-            border-left: 3px solid var(--gold);
-            transition: all 0.25s ease; border-radius: 0 6px 6px 0;
+            /* 玻璃态卡片 */
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(232,224,211,0.6);
+            padding: 14px 16px; border-left: 3px solid var(--gold);
+            transition: all 0.35s var(--ease-out-expo); border-radius: 0 8px 8px 0;
+            cursor: pointer;
+        }
+        .rec-card:hover {
+            background: rgba(255,255,255,0.95); transform: translateX(6px);
+            box-shadow: 0 8px 32px rgba(245,133,31,0.12), 0 0 0 1px rgba(245,133,31,0.08);
         }
         .rec-thumb {
-            width: 52px; height: 52px; border-radius: 6px; flex-shrink: 0;
+            width: 52px; height: 52px; border-radius: 8px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-family: "Arial Black", "Impact", sans-serif;
+            font-family: "Arial Black","Impact",sans-serif;
             font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.55);
         }
-        .rec-img { width: 52px; height: 52px; border-radius: 6px; flex-shrink: 0; object-fit: cover; }
-        .rec-card:hover { background: #FFF4E8; transform: translateX(4px); }
-        .rec-rank { font-family: "Arial Black", "Impact", sans-serif; font-size: 22px; font-weight: 900; color: var(--gold); min-width: 32px; }
+        .rec-img { width: 52px; height: 52px; border-radius: 8px; flex-shrink: 0; object-fit: cover; }
+        .rec-rank { font-family: "Arial Black","Impact",sans-serif; font-size: 22px; font-weight: 900; color: var(--gold); min-width: 32px; }
         .rec-info { flex: 1; }
         .rec-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
         .rec-reason { font-size: 12px; color: var(--warm-gray); line-height: 1.6; }
         .rec-right { text-align: right; flex-shrink: 0; }
-        .rec-score { font-family: "Arial Black", "Impact", sans-serif; font-size: 20px; font-weight: 900; color: var(--ink); }
+        .rec-score { font-family: "Arial Black","Impact",sans-serif; font-size: 20px; font-weight: 900; color: var(--ink); }
         .rec-score span { font-size: 11px; color: var(--warm-gray); }
         .rec-price { font-size: 12px; color: var(--gold); font-weight: 700; margin-top: 2px; }
-        /* 推荐卡片上的收藏按钮 */
         .rec-card-fav {
             background: none; border: none; cursor: pointer; font-size: 16px;
-            padding: 4px; transition: transform 0.2s; color: var(--warm-gray);
+            padding: 4px; transition: transform 0.25s var(--ease-out-back); color: var(--warm-gray);
         }
-        .rec-card-fav:hover { transform: scale(1.2); }
-        .rec-card-fav.faved { color: var(--danger); }
-        /* 推荐卡片展开详情 */
-        .rec-card { cursor: pointer; }
-        .rec-card-detail {
-            display: none; padding: 10px 0 0; font-size: 12px; color: var(--warm-gray);
-            border-top: 1px dashed var(--border); line-height: 1.8;
-        }
-        .rec-card-detail.show { display: block; }
-
-        /* 追问建议标签 */
+        .rec-card-fav:hover { transform: scale(1.25); }
+        .rec-card-fav.faved { color: var(--danger); animation: heartPop 0.4s var(--ease-out-back); }
+        @keyframes heartPop { 0%{transform:scale(1)} 50%{transform:scale(1.35)} 100%{transform:scale(1)} }
+        .rec-card-detail { display:none; padding:10px 0 0; font-size:12px; color:var(--warm-gray); border-top:1px dashed var(--border); line-height:1.8; }
+        .rec-card-detail.show { display:block; animation: expandIn 0.25s var(--ease-out-expo) both; }
+        @keyframes expandIn { from{opacity:0;max-height:0} to{opacity:1;max-height:200px} }
         .followup-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .followup-chip {
-            padding: 6px 14px; font-size: 12px; font-family: inherit;
-            background: #FFF7EF; border: 1px solid rgba(245,133,31,0.2);
-            color: var(--gold); cursor: pointer; border-radius: 16px;
-            transition: all 0.2s; white-space: nowrap;
+            padding: 7px 16px; font-size: 12px; font-family: inherit;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+            border: 1px solid rgba(245,133,31,0.25); color: var(--gold);
+            cursor: pointer; border-radius: 20px; transition: all 0.25s var(--ease-out-expo); white-space:nowrap;
         }
-        .followup-chip:hover { background: var(--gold); color: #fff; }
-
-        /* 反馈按钮 */
+        .followup-chip:hover { background: var(--gold); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,133,31,0.25); }
         .feedback-bar { display: flex; gap: 8px; margin-top: 10px; }
         .feedback-btn {
             background: none; border: 1px solid var(--border); cursor: pointer;
-            font-size: 13px; padding: 4px 12px; border-radius: 14px;
-            transition: all 0.2s; color: var(--warm-gray);
+            font-size: 13px; padding: 4px 14px; border-radius: 14px;
+            transition: all 0.25s var(--ease-out-expo); color: var(--warm-gray);
         }
-        .feedback-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .feedback-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(245,133,31,0.06); }
         .feedback-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
-
-        /* 工具调用状态 */
         .chat-status {
-            display: flex; align-items: center; gap: 8px;
+            display: flex; align-items: center; gap: 10px;
             font-size: 13px; color: var(--gold); padding: 4px 0;
         }
         .chat-status::before {
-            content: ''; width: 12px; height: 12px; border: 2px solid var(--gold);
-            border-top-color: transparent; border-radius: 50%;
+            content: ''; width: 14px; height: 14px;
+            border: 2px solid var(--gold); border-top-color: transparent; border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
+        @keyframes spin { to{transform:rotate(360deg)} }
         .typing { display: flex; gap: 5px; padding: 8px 0; }
         .typing span { width: 7px; height: 7px; background: var(--warm-gray); border-radius: 50%; animation: bounce 1.2s infinite; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce {
-            0%,60%,100% { transform: translateY(0); }
-            30% { transform: translateY(-8px); }
-        }
-
+        @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
         .chat-input-bar { display: flex; gap: 12px; padding: 18px 0 24px; border-top: 1px solid var(--border); }
         .chat-input {
             flex: 1; padding: 14px 18px; font-size: 14px; font-family: inherit;
-            background: var(--white); border: 1px solid var(--border);
-            color: var(--ink); outline: none; transition: all 0.25s ease;
+            background: var(--glass-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border); border-radius: 12px;
+            color: var(--ink); outline: none; transition: all 0.3s var(--ease-out-expo);
         }
-        .chat-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,133,31,0.07); }
+        .chat-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,133,31,0.08); }
         .chat-input::placeholder { color: #C4B8AA; }
-        .chat-input:disabled { background: #F5F0E8; }
+        .chat-input:disabled { background: rgba(245,240,232,0.8); }
         .btn-send {
             padding: 14px 28px; font-size: 14px; font-weight: 700; font-family: inherit;
-            letter-spacing: 2px; cursor: pointer; border: none;
-            background: var(--gold); color: #fff; transition: all 0.25s ease; white-space: nowrap;
+            letter-spacing: 2px; cursor: pointer; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #fff; transition: all 0.3s var(--ease-out-expo); white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(245,133,31,0.25);
         }
-        .btn-send:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
-        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-send:hover:not(:disabled) {
+            transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,133,31,0.35);
+            filter: brightness(1.05);
+        }
+        .btn-send:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+        .offline-banner { text-align:center; padding:8px 20px; font-size:12px; color:var(--danger); background:#FFF0EE; }
+        .empty-chat { text-align:center; padding:64px 20px; color:var(--warm-gray); }
 
-        .offline-banner { text-align: center; padding: 8px 20px; font-size: 12px; color: var(--danger); background: #FFF0EE; }
-        .empty-chat { text-align: center; padding: 64px 20px; color: var(--warm-gray); }
-        .empty-chat .big-icon { font-size: 52px; margin-bottom: 16px; }
-
-        /* ====== 筛选浏览 ====== */
+        /* ===== 筛选浏览 ===== */
         .filter-bar {
             display: flex; flex-wrap: wrap; gap: 12px;
             max-width: 1040px; margin: 0 auto; padding: 28px 40px 8px; align-items: flex-end;
         }
         .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
-        .filter-label { font-size: 10px; letter-spacing: 2px; color: var(--warm-gray); text-transform: uppercase; padding-left: 2px; }
+        .filter-label { font-size: 10px; letter-spacing: 3px; color: var(--warm-gray); text-transform: uppercase; padding-left: 2px; font-weight: 600; }
         .filter-select, .filter-input {
-            padding: 11px 12px; font-size: 13px;
-            background: var(--white); border: 1px solid var(--border);
-            color: var(--ink); outline: none; font-family: inherit; transition: all 0.25s ease;
+            padding: 12px 14px; font-size: 13px; border-radius: 10px;
+            background: var(--glass-bg); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            border: 1px solid var(--border); color: var(--ink); outline: none;
+            font-family: inherit; transition: all 0.3s var(--ease-out-expo);
         }
         .filter-select {
             appearance: none; -webkit-appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%231A1A2E' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 12px center;
-            padding-right: 32px; cursor: pointer;
+            background-repeat: no-repeat; background-position: right 14px center;
+            padding-right: 36px; cursor: pointer;
         }
-        .filter-select:focus, .filter-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,133,31,0.07); }
+        .filter-select:focus, .filter-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,133,31,0.08); }
         .filter-input::placeholder { color: #C4B8AA; }
         .btn-filter {
-            padding: 11px 28px; font-size: 13px; font-weight: 700; font-family: inherit;
-            letter-spacing: 3px; cursor: pointer; border: none; transition: all 0.25s ease;
-            text-transform: uppercase; height: 44px;
+            padding: 12px 28px; font-size: 13px; font-weight: 700; font-family: inherit;
+            letter-spacing: 3px; cursor: pointer; border: none; transition: all 0.3s var(--ease-out-expo);
+            text-transform: uppercase; height: 46px; border-radius: 10px;
         }
         .btn-search {
-            background: var(--gold); color: #fff;
-            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #fff; box-shadow: 0 4px 16px rgba(245,133,31,0.2);
         }
-        .btn-search:hover { background: var(--ink); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(26,26,46,0.2); }
+        .btn-search:hover { filter: brightness(1.05); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,26,46,0.2); }
         .btn-reset { background: transparent; color: var(--warm-gray); border: 1px solid var(--border); }
         .btn-reset:hover { border-color: var(--ink); color: var(--ink); }
 
+        /* ===== 产品卡片（玻璃态 + 悬浮光晕） ===== */
         .product-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 20px; max-width: 1040px; margin: 0 auto; padding: 8px 40px 56px;
+            gap: 24px; max-width: 1040px; margin: 0 auto; padding: 8px 40px 56px;
         }
         .shoe-card {
-            background: var(--white); padding: 0 0 20px 0;
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 0 0 20px 0; border-radius: 14px;
             position: relative; overflow: hidden;
-            border-left: 4px solid var(--border);
-            transition: all 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
-            animation: cardReveal 0.5s ease both; display: flex; flex-direction: column;
+            transition: all 0.4s var(--ease-out-expo);
+            animation: cardReveal 0.55s var(--ease-out-expo) both;
+            display: flex; flex-direction: column;
         }
-        .card-img { width: 100%; height: 140px; object-fit: cover; display: block; margin-bottom: 16px; }
+        .shoe-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 48px rgba(26,26,46,0.1), 0 0 0 1px rgba(245,133,31,0.08);
+            border-color: rgba(245,133,31,0.2);
+        }
+        /* 卡底渐变光条 */
+        .shoe-card::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            transform: scaleX(0); transform-origin: left; transition: transform 0.45s var(--ease-out-expo);
+            border-radius: 0 0 14px 14px;
+        }
+        .shoe-card:hover::after { transform: scaleX(1); }
+        @keyframes cardReveal { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
+        .shoe-card:nth-child(1) { animation-delay: 0.00s } .shoe-card:nth-child(2) { animation-delay: 0.05s }
+        .shoe-card:nth-child(3) { animation-delay: 0.10s } .shoe-card:nth-child(4) { animation-delay: 0.15s }
+        .shoe-card:nth-child(5) { animation-delay: 0.20s } .shoe-card:nth-child(6) { animation-delay: 0.25s }
+        .shoe-card:nth-child(7) { animation-delay: 0.30s } .shoe-card:nth-child(8) { animation-delay: 0.35s }
+        .card-img { width: 100%; height: 160px; object-fit: cover; display: block; border-radius: 14px 14px 0 0; transition: transform 0.5s var(--ease-out-expo); }
+        .shoe-card:hover .card-img { transform: scale(1.04); }
         .card-img-placeholder {
-            width: 100%; height: 140px; display: flex; align-items: center; justify-content: center;
-            margin-bottom: 16px; position: relative; overflow: hidden;
+            width: 100%; height: 160px; display: flex; align-items: center; justify-content: center;
+            border-radius: 14px 14px 0 0;
+            position: relative; overflow: hidden; transition: filter 0.5s;
         }
+        .shoe-card:hover .card-img-placeholder { filter: brightness(1.1); }
         .card-img-placeholder::before {
             content: ''; position: absolute; inset: 0; opacity: 0.35;
-            background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.15) 6px, rgba(255,255,255,0.15) 12px);
+            background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.18) 8px, rgba(255,255,255,0.18) 16px);
         }
         .card-img-placeholder .brand-letter {
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 56px; font-weight: 900; opacity: 0.5; color: #fff;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+            font-size: 64px; font-weight: 900; opacity: 0.45; color: #fff;
             position: relative; z-index: 1; letter-spacing: -2px;
             text-shadow: 0 2px 8px rgba(0,0,0,0.12);
         }
         .card-body { padding: 0 20px; }
-        .shoe-card:hover {
-            transform: translateY(-6px); border-left-color: var(--gold);
-            box-shadow: 0 14px 36px rgba(26,26,46,0.09), 0 0 0 1px rgba(245,133,31,0.06);
-        }
-        .shoe-card::after {
-            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light));
-            transform: scaleX(0); transform-origin: left; transition: transform 0.35s ease;
-        }
-        .shoe-card:hover::after { transform: scaleX(1); }
-        @keyframes cardReveal {
-            from { opacity: 0; transform: translateY(28px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .shoe-card:nth-child(1) { animation-delay: 0.00s; }
-        .shoe-card:nth-child(2) { animation-delay: 0.04s; }
-        .shoe-card:nth-child(3) { animation-delay: 0.08s; }
-        .shoe-card:nth-child(4) { animation-delay: 0.12s; }
-        .shoe-card:nth-child(5) { animation-delay: 0.16s; }
-        .shoe-card:nth-child(6) { animation-delay: 0.20s; }
-        .shoe-card:nth-child(7) { animation-delay: 0.24s; }
-        .shoe-card:nth-child(8) { animation-delay: 0.28s; }
-
         .card-brand {
-            display: inline-block; font-family: "Arial Black", "Impact", sans-serif;
-            font-size: 10px; font-weight: 900; letter-spacing: 2px;
-            color: var(--gold); text-transform: uppercase; margin-bottom: 12px;
-            padding: 3px 10px; background: #FFF7ED;
+            display: inline-block; font-family: "Arial Black","Impact",sans-serif;
+            font-size: 10px; font-weight: 900; letter-spacing: 3px;
+            color: var(--gold); text-transform: uppercase; margin-bottom: 12px; margin-top: 16px;
+            padding: 3px 10px; background: rgba(245,133,31,0.08); border-radius: 4px;
         }
         .card-title { font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
         .card-meta { font-size: 12px; color: var(--warm-gray); margin-bottom: 8px; letter-spacing: 0.5px; }
         .card-desc { font-size: 12px; color: #B8AD9E; line-height: 1.6; margin-bottom: 16px; }
         .card-footer { display: flex; align-items: center; justify-content: space-between; }
         .card-price {
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
             font-size: 22px; font-weight: 900; color: var(--ink);
         }
         .card-price::before { content: '¥'; font-size: 14px; color: var(--gold); margin-right: 2px; }
-        .card-stock { font-size: 11px; letter-spacing: 1px; padding: 4px 10px; }
-        .stock-ok { color: var(--success); background: #EDF7F0; }
-        .stock-no { color: var(--danger); background: #FFF0EE; }
-
+        .card-stock { font-size: 11px; letter-spacing: 1px; padding: 4px 10px; border-radius: 6px; }
+        .stock-ok { color: var(--success); background: rgba(60,157,112,0.08); }
+        .stock-no { color: var(--danger); background: rgba(224,85,74,0.06); }
         .empty-state { text-align: center; padding: 80px 40px; color: var(--warm-gray); }
         .empty-state .empty-num {
-            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
             font-size: 80px; font-weight: 900; color: #E8DFD3; line-height: 1; margin-bottom: 12px;
         }
 
         /* 收藏按钮 */
         .btn-fav {
             background: none; border: none; cursor: pointer; font-size: 18px;
-            padding: 4px 8px; transition: transform 0.2s ease; border-radius: 4px;
+            padding: 4px 8px; transition: transform 0.25s var(--ease-out-back); border-radius: 4px;
             color: var(--warm-gray); line-height: 1;
         }
-        .btn-fav:hover { transform: scale(1.2); }
-        .btn-fav.faved { color: var(--danger); }
+        .btn-fav:hover { transform: scale(1.25); }
+        .btn-fav.faved { color: var(--danger); animation: heartPop 0.4s var(--ease-out-back); }
 
-        /* ====== 管理按钮 ====== */
+        /* 收藏粒子 */
+        .fav-particle {
+            position: fixed; pointer-events: none; z-index: 999;
+            font-size: 12px; animation: particleUp 0.8s ease-out forwards;
+        }
+        @keyframes particleUp {
+            0% { opacity:1; transform:translate(0,0) scale(1); }
+            100% { opacity:0; transform:translate(var(--px), var(--py)) scale(0); }
+        }
+
+        /* 管理按钮 */
         .btn-admin {
             background: none; border: 1px solid var(--border); cursor: pointer;
             font-size: 11px; padding: 3px 10px; font-family: inherit;
-            letter-spacing: 1px; transition: all 0.2s ease; border-radius: 3px;
+            letter-spacing: 1px; transition: all 0.25s var(--ease-out-expo); border-radius: 6px;
             color: var(--warm-gray); margin-left: 4px;
         }
         .btn-admin:hover { border-color: var(--ink); color: var(--ink); }
-        .btn-admin.danger:hover { border-color: var(--danger); color: var(--danger); }
-
+        .btn-admin.danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(224,85,74,0.04); }
         .btn-add-product {
-            position: fixed; bottom: 32px; right: 32px; z-index: 150;
-            width: 48px; height: 48px; border-radius: 50%;
-            background: var(--gold); color: #fff; border: none;
-            font-size: 22px; cursor: pointer; font-weight: 700;
-            box-shadow: 0 6px 20px rgba(245,133,31,0.35);
-            transition: all 0.25s ease; display: flex; align-items: center; justify-content: center;
+            position: fixed; bottom: 36px; right: 36px; z-index: 150;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #fff; border: none; font-size: 24px; cursor: pointer; font-weight: 700;
+            box-shadow: 0 8px 28px rgba(245,133,31,0.35);
+            transition: all 0.3s var(--ease-out-expo);
+            display: flex; align-items: center; justify-content: center;
         }
-        .btn-add-product:hover { background: var(--ink); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(26,26,46,0.3); }
+        .btn-add-product:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 14px 36px rgba(245,133,31,0.45);
+        }
 
-        /* ====== 弹窗遮罩 ====== */
+        /* 弹窗（玻璃态） */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 500;
-            background: rgba(26,26,46,0.55); backdrop-filter: blur(4px);
+            background: rgba(26,26,46,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
             display: flex; align-items: center; justify-content: center;
-            animation: fadeIn 0.25s ease;
+            animation: fadeIn 0.2s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
         .modal-box {
-            background: var(--white); width: 480px; max-width: 90vw; max-height: 85vh;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 18px;
+            width: 480px; max-width: 90vw; max-height: 85vh;
             overflow-y: auto; padding: 36px 32px 28px;
-            animation: slideUp 0.3s ease;
+            animation: slideUp 0.35s var(--ease-out-expo);
+            box-shadow: 0 24px 64px rgba(26,26,46,0.15);
         }
-        @keyframes slideUp {
-            from { transform: translateY(24px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal-title { font-family: "Arial Black", "Impact", sans-serif; font-size: 20px; font-weight: 900; margin-bottom: 28px; }
+        @keyframes slideUp { from{transform:translateY(28px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .modal-title { font-family:"Arial Black","Impact",sans-serif; font-size:20px; font-weight:900; margin-bottom:28px; }
         .modal-field { margin-bottom: 18px; }
-        .modal-field label { display: block; font-size: 10px; letter-spacing: 2px; color: var(--warm-gray); text-transform: uppercase; margin-bottom: 6px; }
+        .modal-field label { display:block; font-size:10px; letter-spacing:3px; color:var(--warm-gray); text-transform:uppercase; margin-bottom:6px; font-weight:600; }
         .modal-field input, .modal-field select, .modal-field textarea {
             width: 100%; padding: 12px 14px; font-size: 14px; font-family: inherit;
             border: 1px solid var(--border); color: var(--ink); outline: none;
-            background: #FAF9F6; transition: border-color 0.25s;
+            background: #FAF9F6; border-radius: 10px; transition: border-color 0.3s var(--ease-out-expo);
         }
-        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--gold); }
+        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,133,31,0.06); }
         .modal-field textarea { resize: vertical; min-height: 72px; }
         .modal-btns { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; }
         .modal-btns button {
             padding: 11px 28px; font-size: 13px; font-weight: 700; font-family: inherit;
-            letter-spacing: 2px; cursor: pointer; border: none; transition: all 0.2s;
+            letter-spacing: 2px; cursor: pointer; border: none; border-radius: 10px;
+            transition: all 0.3s var(--ease-out-expo);
         }
-        .btn-save { background: var(--gold); color: #fff; }
-        .btn-save:hover { background: var(--ink); }
+        .btn-save {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #fff; box-shadow: 0 4px 16px rgba(245,133,31,0.2);
+        }
+        .btn-save:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .btn-cancel { background: transparent; color: var(--warm-gray); border: 1px solid var(--border); }
         .btn-cancel:hover { border-color: var(--ink); color: var(--ink); }
 
+        /* 滚动条 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--cream); }
         ::-webkit-scrollbar-thumb { background: #D6CBB8; border-radius: 3px; }
@@ -481,7 +485,7 @@
             .nav-bar { padding: 0 20px; }
             .hero { padding: 28px 20px 20px; }
             .hero-stats { gap: 24px; }
-            .stat-num { font-size: 26px; }
+            .stat-num { font-size: 28px; }
             .tab-bar { padding: 0 20px; }
             .tab-btn { padding: 12px 20px; font-size: 13px; }
             .filter-bar { padding: 20px 20px 8px; flex-direction: column; }
@@ -498,14 +502,12 @@
 <body>
 
 <div id="app">
-    <!-- ====== 顶部导航栏 ====== -->
+    <!-- 顶栏 -->
     <nav class="nav-bar">
-        <div class="nav-logo">
-            <div class="nav-logo-dot"></div>AI鞋类导购
-        </div>
+        <div class="nav-logo"><div class="nav-logo-dot"></div>AI鞋类导购</div>
         <div class="nav-right">
             <button @click="goProfile" style="background:none;border:none;cursor:pointer;padding:0;">
-                <div style="width:34px;height:34px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Impact,sans-serif;font-size:16px;font-weight:900;" :title="user ? user.username : ''">
+                <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Impact,sans-serif;font-size:16px;font-weight:900;box-shadow:0 0 12px rgba(245,133,31,0.3);" :title="user ? user.username : ''">
                     {{ user ? user.username.charAt(0).toUpperCase() : '?' }}
                 </div>
             </button>
@@ -513,14 +515,11 @@
         </div>
     </nav>
 
-    <!-- ====== 滑动侧边栏 ====== -->
+    <!-- 滑动侧边栏 -->
     <div class="sidebar-wrap">
         <div class="sidebar-trigger"></div>
         <aside class="sidebar">
-        <div class="sidebar-logo">
-            <div class="sidebar-logo-dot"></div>AI鞋类导购
-        </div>
-
+        <div class="sidebar-logo"><div class="sidebar-logo-dot"></div>AI鞋类导购</div>
         <div class="sidebar-user" @click="goProfile" title="个人中心">
             <div class="user-avatar">{{ user ? user.username.charAt(0).toUpperCase() : '?' }}</div>
             <div class="user-info">
@@ -528,7 +527,6 @@
                 <div class="user-role">{{ user && user.role === 'admin' ? '管理员' : '用户' }}</div>
             </div>
         </div>
-
         <nav class="sidebar-nav">
             <button :class="'nav-item' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">
                 <span class="nav-icon">🤖</span>AI 智能导购
@@ -540,26 +538,22 @@
                 <span class="nav-icon">👤</span>个人中心
             </button>
         </nav>
-
         <div class="sidebar-bottom">
-            <button class="nav-item" @click="logout">
-                <span class="nav-icon">↩</span>退出登录
-            </button>
+            <button class="nav-item" @click="logout"><span class="nav-icon">↩</span>退出登录</button>
         </div>
     </aside>
-    </div>  <!-- /sidebar-wrap -->
+    </div>
 
-    <!-- ====== 主内容区 ====== -->
     <!-- Hero -->
     <div class="hero">
         <div class="hero-left">
             <h1>每一步 <em>都精彩</em></h1>
-            <p>智能匹配 · 找到你的专属鞋款</p>
+            <p>SMART MATCH · 找到你的专属鞋款</p>
         </div>
         <div class="hero-stats">
-            <div><div class="stat-num accent">{{ allProducts.length }}</div><div class="stat-label">在售鞋款</div></div>
-            <div><div class="stat-num">{{ brands.length }}</div><div class="stat-label">品牌入驻</div></div>
-            <div><div class="stat-num">{{ categories.length }}</div><div class="stat-label">品类覆盖</div></div>
+            <div class="stat-item"><div class="stat-num accent" ref="statShoes">0</div><div class="stat-label">在售鞋款</div></div>
+            <div class="stat-item"><div class="stat-num" ref="statBrands">0</div><div class="stat-label">品牌入驻</div></div>
+            <div class="stat-item"><div class="stat-num" ref="statCats">0</div><div class="stat-label">品类覆盖</div></div>
         </div>
     </div>
 
@@ -572,15 +566,31 @@
     <!-- Tab 1: AI 对话 -->
     <div :class="'tab-content' + (tab === 'ai' ? ' active' : '')">
         <div v-if="!aiOnline" class="offline-banner">AI 助手暂时离线，请切换到「全部鞋款」使用传统筛选</div>
-
         <div class="chat-wrapper">
             <div class="chat-messages" ref="msgContainer">
                 <div v-if="chatMessages.length === 0" class="empty-chat">
-                    <div class="big-icon">👟</div>
+                    <!-- 空状态 SVG 插画：鞋子 + 对话气泡 -->
+                    <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px;">
+                        <!-- 对话气泡底 -->
+                        <rect x="20" y="14" width="60" height="44" rx="14" fill="#F0EBE0" stroke="#E8DFD3" stroke-width="1.5"/>
+                        <!-- 气泡尾巴 -->
+                        <path d="M24 58 L18 72 L36 58" fill="#F0EBE0" stroke="#E8DFD3" stroke-width="1.5"/>
+                        <!-- 鞋子轮廓 -->
+                        <g transform="translate(34, 20)">
+                            <ellipse cx="8" cy="18" rx="7" ry="4" fill="#D6CBB8"/>
+                            <path d="M1 18 Q1 0 16 0 Q24 0 28 8 L28 18" fill="none" stroke="#F5851F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line x1="4" y1="14" x2="20" y2="14" stroke="#F5851F" stroke-width="1.2" stroke-dasharray="3 2" opacity="0.6"/>
+                        </g>
+                        <!-- 小圆点装饰 -->
+                        <circle cx="58" cy="44" r="2" fill="#D6CBB8"/>
+                        <circle cx="66" cy="44" r="2" fill="#D6CBB8"/>
+                        <circle cx="74" cy="44" r="2" fill="#D6CBB8"/>
+                        <!-- 右上角 ✦ -->
+                        <text x="78" y="22" font-size="10" fill="#F5851F" opacity="0.5">✦</text>
+                    </svg>
                     <div style="font-size:16px;font-weight:700;margin-bottom:8px;">你好！想找什么鞋？</div>
                     <div style="font-size:13px;">告诉我你的需求，比如"跑步穿的缓震鞋，预算500以内"</div>
                 </div>
-
                 <div v-for="(msg, i) in chatMessages" :key="i" :class="'msg-row ' + msg.role">
                     <div class="msg-avatar">{{ msg.role === 'ai' ? '🤖' : '👤' }}</div>
                     <div class="msg-bubble">
@@ -593,7 +603,6 @@
                                 <div class="rec-info">
                                     <div class="rec-name">{{ r.name }}</div>
                                     <div class="rec-reason">{{ r.reason }}</div>
-                                    <!-- 点击展开的详情：显示更多商品信息 -->
                                     <div :class="'rec-card-detail' + (r._expanded ? ' show' : '')" @click.stop>
                                         <div v-if="findProduct(r.productId)">
                                             <template v-if="findProduct(r.productId).description">📝 {{ findProduct(r.productId).description }}</template>
@@ -607,20 +616,17 @@
                                     <div class="rec-score">{{ r.score }}<span> 分</span></div>
                                     <div class="rec-price" v-if="findPrice(r)">¥{{ findPrice(r) }}</div>
                                 </div>
-                                <!-- 收藏按钮：直接在推荐卡片上操作，不需要切到浏览 tab -->
                                 <button :class="'rec-card-fav' + (isFaved(r.productId) ? ' faved' : '')"
-                                        @click.stop="toggleFav(r.productId)"
+                                        @click.stop="favClick($event, r.productId)"
                                         :title="isFaved(r.productId) ? '取消收藏' : '收藏'">
                                     {{ isFaved(r.productId) ? '❤️' : '🤍' }}
                                 </button>
                             </div>
                         </div>
-                        <!-- 追问建议：AI 生成的后续问题，用户点击即发送 -->
                         <div v-if="msg.followUps && msg.followUps.length > 0" class="followup-chips">
                             <button v-for="(fu, fi) in msg.followUps" :key="fi" class="followup-chip"
                                     @click="sendFollowup(fu)">{{ fu }}</button>
                         </div>
-                        <!-- 👍👎 反馈按钮：收集用户对推荐质量的评价 -->
                         <div v-if="msg.role === 'ai' && msg.results && msg.results.length > 0" class="feedback-bar">
                             <button :class="'feedback-btn' + (msg._feedback === 'like' ? ' active' : '')"
                                     @click="submitFeedback(msg, 'like')">👍 有帮助</button>
@@ -629,17 +635,14 @@
                         </div>
                     </div>
                 </div>
-
                 <div v-if="chatLoading" class="msg-row ai">
                     <div class="msg-avatar">🤖</div>
                     <div class="msg-bubble">
-                        <!-- 工具调用时显示"正在搜索…"状态，否则显示打字动画 -->
                         <div v-if="chatStatus" class="chat-status">{{ chatStatus }}</div>
                         <div v-else class="typing"><span></span><span></span><span></span></div>
                     </div>
                 </div>
             </div>
-
             <div class="chat-input-bar">
                 <input class="chat-input" v-model="inputText" @keyup.enter="sendMsg"
                        :disabled="chatLoading" placeholder="输入你的需求，如：男生跑步宽脚预算400...">
@@ -654,24 +657,19 @@
             <div class="filter-group">
                 <span class="filter-label">性别</span>
                 <select v-model="fGender" class="filter-select" @change="filterProducts">
-                    <option value="">不限</option>
-                    <option value="male">男款</option>
-                    <option value="female">女款</option>
-                    <option value="unisex">通用款</option>
+                    <option value="">不限</option><option value="male">男款</option><option value="female">女款</option><option value="unisex">通用款</option>
                 </select>
             </div>
             <div class="filter-group">
                 <span class="filter-label">品类</span>
                 <select v-model="fCategory" class="filter-select" @change="filterProducts">
-                    <option value="">不限</option>
-                    <option v-for="c in categories" :value="c">{{ c }}</option>
+                    <option value="">不限</option><option v-for="c in categories" :value="c">{{ c }}</option>
                 </select>
             </div>
             <div class="filter-group">
                 <span class="filter-label">品牌</span>
                 <select v-model="fBrand" class="filter-select" @change="filterProducts">
-                    <option value="">不限</option>
-                    <option v-for="b in brands" :value="b">{{ b }}</option>
+                    <option value="">不限</option><option v-for="b in brands" :value="b">{{ b }}</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -685,10 +683,8 @@
             <button @click="filterProducts" class="btn-filter btn-search">筛选</button>
             <button @click="resetFilter" class="btn-filter btn-reset">重置</button>
         </div>
-
         <div v-if="filterMsg" class="empty-state">
-            <div class="empty-num">00</div>
-            <div class="empty-text">{{ filterMsg }}</div>
+            <div class="empty-num">00</div><div class="empty-text">{{ filterMsg }}</div>
         </div>
         <div v-if="filteredProducts.length > 0" class="product-grid">
             <div v-for="p in filteredProducts" :key="p.id" class="shoe-card">
@@ -701,22 +697,19 @@
                     <div class="card-title">{{ p.name }}</div>
                     <div class="card-meta">
                         {{ p.category }}
-                        <span v-if="p.gender === 'male'">· 男款</span>
-                        <span v-else-if="p.gender === 'female'">· 女款</span>
-                        <span v-else>· 通用</span>
-                        <span v-if="p.color"> · {{ p.color }}</span>
-                        <span v-if="p.sizeRange"> · {{ p.sizeRange }}</span>
+                        <span v-if="p.gender==='male'">· 男款</span><span v-else-if="p.gender==='female'">· 女款</span><span v-else>· 通用</span>
+                        <span v-if="p.color"> · {{ p.color }}</span><span v-if="p.sizeRange"> · {{ p.sizeRange }}</span>
                     </div>
                     <div class="card-desc">{{ p.description }}</div>
                     <div class="card-footer">
                         <span class="card-price">{{ p.price }}</span>
                         <div>
-                            <button :class="'btn-fav' + (isFaved(p.id) ? ' faved' : '')" @click="toggleFav(p.id)" :title="isFaved(p.id) ? '取消收藏' : '收藏'">
+                            <button :class="'btn-fav' + (isFaved(p.id) ? ' faved' : '')"
+                                    @click="favClick($event, p.id)"
+                                    :title="isFaved(p.id) ? '取消收藏' : '收藏'">
                                 {{ isFaved(p.id) ? '❤️' : '🤍' }}
                             </button>
-                            <span :class="p.stock > 0 ? 'card-stock stock-ok' : 'card-stock stock-no'">
-                                {{ p.stock > 0 ? '有货' : '缺货' }}
-                            </span>
+                            <span :class="p.stock > 0 ? 'card-stock stock-ok' : 'card-stock stock-no'">{{ p.stock > 0 ? '有货' : '缺货' }}</span>
                             <template v-if="isAdmin">
                                 <button class="btn-admin" @click="openEdit(p)">编辑</button>
                                 <button class="btn-admin danger" @click="deleteProduct(p)">删除</button>
@@ -728,63 +721,25 @@
         </div>
     </div>
 
-    <!-- ====== 管理员：浮动添加按钮 ====== -->
+    <!-- 管理员浮动添加按钮 -->
     <button v-if="isAdmin" class="btn-add-product" @click="openAdd" title="新增鞋款">+</button>
 
-    <!-- ====== 管理员：新增/编辑弹窗 ====== -->
+    <!-- 管理员弹窗 -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
         <div class="modal-box">
             <div class="modal-title">{{ editingId ? '编辑鞋款' : '新增鞋款' }}</div>
-            <div class="modal-field">
-                <label>鞋款名称</label>
-                <input v-model="form.name" placeholder="如 Air Zoom Pegasus">
-            </div>
-            <div class="modal-field">
-                <label>品牌</label>
-                <input v-model="form.brand" placeholder="如 Nike">
-            </div>
-            <div class="modal-field">
-                <label>品类</label>
-                <select v-model="form.category">
-                    <option value="">请选择</option>
-                    <option v-for="c in categories" :value="c">{{ c }}</option>
-                </select>
-            </div>
-            <div class="modal-field">
-                <label>性别</label>
-                <select v-model="form.gender">
-                    <option value="">不限</option>
-                    <option value="male">男款</option>
-                    <option value="female">女款</option>
-                    <option value="unisex">通用</option>
-                </select>
-            </div>
+            <div class="modal-field"><label>鞋款名称</label><input v-model="form.name" placeholder="如 Air Zoom Pegasus"></div>
+            <div class="modal-field"><label>品牌</label><input v-model="form.brand" placeholder="如 Nike"></div>
+            <div class="modal-field"><label>品类</label><select v-model="form.category"><option value="">请选择</option><option v-for="c in categories" :value="c">{{ c }}</option></select></div>
+            <div class="modal-field"><label>性别</label><select v-model="form.gender"><option value="">不限</option><option value="male">男款</option><option value="female">女款</option><option value="unisex">通用</option></select></div>
             <div style="display:flex;gap:14px;">
-                <div class="modal-field" style="flex:1;">
-                    <label>价格 (¥)</label>
-                    <input v-model.number="form.price" type="number" placeholder="399">
-                </div>
-                <div class="modal-field" style="flex:1;">
-                    <label>库存</label>
-                    <input v-model.number="form.stock" type="number" placeholder="100">
-                </div>
+                <div class="modal-field" style="flex:1;"><label>价格 (¥)</label><input v-model.number="form.price" type="number" placeholder="399"></div>
+                <div class="modal-field" style="flex:1;"><label>库存</label><input v-model.number="form.stock" type="number" placeholder="100"></div>
             </div>
-            <div class="modal-field">
-                <label>图片 URL</label>
-                <input v-model="form.imageUrl" placeholder="https://...">
-            </div>
-            <div class="modal-field">
-                <label>颜色</label>
-                <input v-model="form.color" placeholder="如 黑/白">
-            </div>
-            <div class="modal-field">
-                <label>尺码范围</label>
-                <input v-model="form.sizeRange" placeholder="如 36-45">
-            </div>
-            <div class="modal-field">
-                <label>描述</label>
-                <textarea v-model="form.description" placeholder="轻量缓震跑鞋，适合日常训练..."></textarea>
-            </div>
+            <div class="modal-field"><label>图片 URL</label><input v-model="form.imageUrl" placeholder="https://..."></div>
+            <div class="modal-field"><label>颜色</label><input v-model="form.color" placeholder="如 黑/白"></div>
+            <div class="modal-field"><label>尺码范围</label><input v-model="form.sizeRange" placeholder="如 36-45"></div>
+            <div class="modal-field"><label>描述</label><textarea v-model="form.description" placeholder="轻量缓震跑鞋，适合日常训练..."></textarea></div>
             <div class="modal-btns">
                 <button class="btn-cancel" @click="showModal = false">取 消</button>
                 <button class="btn-save" @click="saveProduct" :disabled="saving">{{ saving ? '保存中...' : '保 存' }}</button>
@@ -799,334 +754,202 @@ const { createApp } = Vue
 createApp({
     data() {
         return {
-            user: null,
-            tab: 'ai',
-
-            inputText: '',
-            conversationId: null,
-            chatMessages: [],
-            chatLoading: false,
-            chatStatus: '',  // 工具调用状态文案，如"正在搜索…"，空字符串时不显示
-            aiOnline: true,
-
+            user: null, tab: 'ai',
+            inputText: '', conversationId: null,
+            chatMessages: [], chatLoading: false, chatStatus: '', aiOnline: true,
             allProducts: [],
-
             fGender: '', fCategory: '', fBrand: '', fMinPrice: '', fMaxPrice: '',
-            filteredProducts: [],
-            filterMsg: '',
-
+            filteredProducts: [], filterMsg: '',
             favIds: new Set(),
-
-            // 管理员增删改
-            showModal: false,
-            editingId: null,
-            saving: false,
-            form: { name: '', brand: '', category: '', gender: '', price: 0, stock: 0, imageUrl: '', color: '', sizeRange: '', description: '' }
+            showModal: false, editingId: null, saving: false,
+            form: { name:'', brand:'', category:'', gender:'', price:0, stock:0, imageUrl:'', color:'', sizeRange:'', description:'' }
         }
     },
     computed: {
         isAdmin() { return this.user && this.user.role === 'admin' },
-        brands() {
-            return [...new Set(this.allProducts.map(p => p.brand))].sort()
-        },
-        categories() {
-            return [...new Set(this.allProducts.map(p => p.category))].sort()
-        }
+        brands() { return [...new Set(this.allProducts.map(p => p.brand))].sort() },
+        categories() { return [...new Set(this.allProducts.map(p => p.category))].sort() }
     },
     async mounted() {
-        const res = await fetch('/api/user/status')
-        const data = await res.json()
+        // 1. 检查登录
+        const res = await fetch('/api/user/status'); const data = await res.json()
         if (data.code !== 200) { window.location.href = '/login.html'; return }
         this.user = data.data
+        // 2. 加载数据
         await Promise.all([this.loadProducts(), this.loadFavorites()])
         this.filterProducts()
         this.checkAIHealth()
+        // 3. 数字滚动动画（在数据加载完后执行）
+        this.$nextTick(() => this.animateNumbers())
     },
     methods: {
-        async loadProducts() {
-            try {
-                const r = await fetch('/api/products')
-                const d = await r.json()
-                if (d.code === 200) this.allProducts = d.data
-            } catch(e) {}
+        // ===== 数字滚动动画 =====
+        animateNumbers() {
+            const targets = [
+                { ref: 'statShoes', target: this.allProducts.length },
+                { ref: 'statBrands', target: this.brands.length },
+                { ref: 'statCats', target: this.categories.length }
+            ]
+            const duration = 1200 // 动画总时长 ms
+            targets.forEach(({ ref, target }) => {
+                const el = this.$refs[ref]
+                if (!el || target === 0) return
+                const start = performance.now()
+                const step = (now) => {
+                    const progress = Math.min((now - start) / duration, 1)
+                    // easeOutExpo 缓出曲线，先快后慢
+                    const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
+                    el.textContent = Math.floor(eased * target)
+                    if (progress < 1) requestAnimationFrame(step)
+                    else el.textContent = target
+                }
+                requestAnimationFrame(step)
+            })
+        },
+        // ===== 收藏（带粒子特效） =====
+        favClick(event, pid) {
+            // 粒子特效：从点击位置飘出 ❤️
+            if (!this.favIds.has(pid)) {
+                this.spawnParticles(event.clientX, event.clientY)
+            }
+            this.toggleFav(pid)
+        },
+        spawnParticles(x, y) {
+            const emojis = ['❤️', '✨', '💛']
+            for (let i = 0; i < 6; i++) {
+                const p = document.createElement('span')
+                p.className = 'fav-particle'
+                p.textContent = emojis[Math.floor(Math.random() * emojis.length)]
+                // 随机偏移方向
+                p.style.setProperty('--px', (Math.random() - 0.5) * 80 + 'px')
+                p.style.setProperty('--py', -(Math.random() * 60 + 30) + 'px')
+                p.style.left = x + 'px'
+                p.style.top = y + 'px'
+                p.style.animationDuration = (0.5 + Math.random() * 0.6) + 's'
+                document.body.appendChild(p)
+                // 动画结束后移除 DOM
+                setTimeout(() => p.remove(), 900)
+            }
         },
 
-        // ====== 收藏 ======
+        async loadProducts() {
+            try { const r = await fetch('/api/products'); const d = await r.json(); if (d.code===200) this.allProducts = d.data } catch(e) {}
+        },
         async loadFavorites() {
-            try {
-                const r = await fetch('/api/user/favorites')
-                const d = await r.json()
-                if (d.code === 200) {
-                    this.favIds = new Set(d.data.map(f => f.productId))
-                }
-            } catch(e) {}
+            try { const r = await fetch('/api/user/favorites'); const d = await r.json(); if (d.code===200) this.favIds = new Set(d.data.map(f=>f.productId)) } catch(e) {}
         },
         isFaved(pid) { return this.favIds.has(pid) },
         async toggleFav(pid) {
             try {
-                if (this.favIds.has(pid)) {
-                    await fetch('/api/user/favorite/' + pid, { method: 'DELETE' })
-                    this.favIds.delete(pid)
-                } else {
-                    await fetch('/api/user/favorite/' + pid, { method: 'POST' })
-                    this.favIds.add(pid)
-                }
+                if (this.favIds.has(pid)) { await fetch('/api/user/favorite/'+pid,{method:'DELETE'}); this.favIds.delete(pid) }
+                else { await fetch('/api/user/favorite/'+pid,{method:'POST'}); this.favIds.add(pid) }
             } catch(e) {}
         },
-
         filterProducts() {
             let list = [...this.allProducts]
-            if (this.fGender) list = list.filter(p => p.gender === this.fGender)
-            if (this.fCategory) list = list.filter(p => p.category === this.fCategory)
-            if (this.fBrand) list = list.filter(p => p.brand === this.fBrand)
-            if (this.fMinPrice) list = list.filter(p => p.price >= parseFloat(this.fMinPrice))
-            if (this.fMaxPrice) list = list.filter(p => p.price <= parseFloat(this.fMaxPrice))
+            if (this.fGender) list = list.filter(p=>p.gender===this.fGender)
+            if (this.fCategory) list = list.filter(p=>p.category===this.fCategory)
+            if (this.fBrand) list = list.filter(p=>p.brand===this.fBrand)
+            if (this.fMinPrice) list = list.filter(p=>p.price>=parseFloat(this.fMinPrice))
+            if (this.fMaxPrice) list = list.filter(p=>p.price<=parseFloat(this.fMaxPrice))
             this.filteredProducts = list
-            this.filterMsg = list.length === 0 ? '没有匹配的鞋款，试试放宽条件' : ''
+            this.filterMsg = list.length===0 ? '没有匹配的鞋款，试试放宽条件' : ''
         },
-        resetFilter() {
-            this.fGender = ''; this.fCategory = ''; this.fBrand = '';
-            this.fMinPrice = ''; this.fMaxPrice = '';
-            this.filterProducts()
-        },
-
+        resetFilter() { this.fGender=''; this.fCategory=''; this.fBrand=''; this.fMinPrice=''; this.fMaxPrice=''; this.filterProducts() },
         async checkAIHealth() {
-            try {
-                const r = await fetch('/api/ai/health')
-                const d = await r.json()
-                this.aiOnline = d.data?.online || false
-            } catch(e) { this.aiOnline = false }
+            try { const r = await fetch('/api/ai/health'); const d = await r.json(); this.aiOnline = d.data?.online||false } catch(e) { this.aiOnline=false }
         },
         brandColor(name) {
-            let hash = 0
-            for (let i = 0; i < name.length; i++) { hash = name.charCodeAt(i) + ((hash << 5) - hash) }
-            const h = Math.abs(hash) % 360
-            return `hsl(${h}, 45%, 42%)`
+            let hash = 0; for (let i=0;i<name.length;i++) hash = name.charCodeAt(i)+((hash<<5)-hash)
+            return `hsl(${Math.abs(hash)%360},45%,42%)`
         },
-        findPrice(result) {
-            const p = this.allProducts.find(x => x.id === result.productId)
-            return p ? p.price : null
-        },
-        findImage(result) {
-            const p = this.allProducts.find(x => x.id === result.productId)
-            return p ? p.imageUrl : null
-        },
+        findPrice(result) { const p = this.allProducts.find(x=>x.id===result.productId); return p ? p.price : null },
+        findImage(result) { const p = this.allProducts.find(x=>x.id===result.productId); return p ? p.imageUrl : null },
         async sendMsg() {
-            const msg = this.inputText.trim()
-            if (!msg || this.chatLoading) return
-
-            // 先显示用户消息
-            this.chatMessages.push({ role: 'user', content: this.esc(msg) })
-            this.inputText = ''
-            this.chatLoading = true
-            this.chatStatus = ''  // 清除上次残留状态
-            this.$nextTick(() => this.scrollChat())
-
+            const msg = this.inputText.trim(); if (!msg||this.chatLoading) return
+            this.chatMessages.push({role:'user',content:this.esc(msg)})
+            this.inputText=''; this.chatLoading=true; this.chatStatus=''; this.$nextTick(()=>this.scrollChat())
             try {
-                // 发起 SSE 流式请求
-                const r = await fetch('/api/ai/chat/stream', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ conversation_id: this.conversationId, message: msg })
-                })
-                if (!r.ok) throw new Error('SSE 连接失败')
-
-                // 读取流：逐行解析 SSE data
-                const reader = r.body.getReader()
-                const decoder = new TextDecoder()
-                let buffer = '' // 缓冲区：拼接不完整的行
-
-                // 插入占位 AI 消息，后续逐 token 往里面拼
-                const aiIdx = this.chatMessages.push({
-                    role: 'ai', content: '',
-                    action: 'chat', results: [], followUps: []
-                }) - 1
-
+                const r = await fetch('/api/ai/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
+                if (!r.ok) throw new Error('SSE fail')
+                const reader = r.body.getReader(); const decoder = new TextDecoder(); let buffer = ''
+                const aiIdx = this.chatMessages.push({role:'ai',content:'',action:'chat',results:[],followUps:[]}) - 1
                 while (true) {
-                    const { done, value } = await reader.read()
-                    if (done) break
-
-                    buffer += decoder.decode(value, { stream: true })
-                    const lines = buffer.split('\n')
-                    buffer = lines.pop() || ''  // 最后一个可能不完整，留着
-
+                    const {done,value} = await reader.read(); if (done) break
+                    buffer += decoder.decode(value,{stream:true}); const lines = buffer.split('\n'); buffer = lines.pop()||''
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue
-                        const payload = line.slice(6)
                         try {
-                            const d = JSON.parse(payload)
-                            if (d.token) {
-                                this.chatMessages[aiIdx].content += this.fmtToken(d.token)
-                                this.$nextTick(() => this.scrollChat())
-                            } else if (d.status !== undefined) {
-                                // 工具调用状态：Python 端工具开始/结束时的通知
-                                this.chatStatus = d.status
-                                this.$nextTick(() => this.scrollChat())
-                            } else if (d.done) {
-                                // 流结束，写入终版内容 + followUps
+                            const d = JSON.parse(line.slice(6))
+                            if (d.token) { this.chatMessages[aiIdx].content += this.fmtToken(d.token); this.$nextTick(()=>this.scrollChat()) }
+                            else if (d.status!==undefined) { this.chatStatus = d.status; this.$nextTick(()=>this.scrollChat()) }
+                            else if (d.done) {
                                 this.conversationId = d.conversation_id
                                 this.chatMessages[aiIdx].content = this.cleanMarkdown(d.reply)
                                 this.chatMessages[aiIdx].action = d.action
-                                this.chatMessages[aiIdx].results = d.results || []
-                                this.chatMessages[aiIdx].followUps = d.followUps || []
-                                // 保存到 AI 对话历史
+                                this.chatMessages[aiIdx].results = d.results||[]
+                                this.chatMessages[aiIdx].followUps = d.followUps||[]
                                 this.saveChatHistory(msg, d.reply)
                             }
-                        } catch (_) { /* 忽略 JSON 解析异常 */ }
+                        } catch(_) {}
                     }
                 }
             } catch(e) {
-                // SSE 失败时降级为非流式请求
                 try {
-                    const r2 = await fetch('/api/ai/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ conversation_id: this.conversationId, message: msg })
-                    })
-                    const d2 = await r2.json()
-                    const resp = d2.data
-                    this.conversationId = resp.conversation_id
-                    this.chatMessages.push({
-                        role: 'ai', content: this.cleanMarkdown(resp.reply),
-                        action: resp.action, results: resp.results || [],
-                        followUps: resp.followUps || []
-                    })
-                    // 保存到 AI 对话历史（降级路径）
+                    const r2 = await fetch('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
+                    const d2 = await r2.json(); const resp = d2.data; this.conversationId = resp.conversation_id
+                    this.chatMessages.push({role:'ai',content:this.cleanMarkdown(resp.reply),action:resp.action,results:resp.results||[],followUps:resp.followUps||[]})
                     this.saveChatHistory(msg, resp.reply)
-                } catch(_) {
-                    this.chatMessages.push({
-                        role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后再试。',
-                        action: 'chat', results: [], followUps: []
-                    })
-                }
-            } finally {
-                this.chatLoading = false
-                this.chatStatus = ''  // 清除工具调用状态
-                this.$nextTick(() => this.scrollChat())
-            }
+                } catch(_) { this.chatMessages.push({role:'ai',content:'抱歉，AI 服务暂时不可用，请稍后再试。',action:'chat',results:[],followUps:[]}) }
+            } finally { this.chatLoading=false; this.chatStatus=''; this.$nextTick(()=>this.scrollChat()) }
         },
-        /** 根据 productId 查完整商品信息（用于推荐卡片展开详情） */
-        findProduct(pid) {
-            return this.allProducts.find(p => p.id === pid) || null
-        },
-        /** 点击追问标签 → 自动填入输入框并发送 */
-        sendFollowup(text) {
-            this.inputText = text
-            this.$nextTick(() => this.sendMsg())
-        },
-        /** 提交 AI 推荐反馈（👍/👎） */
+        findProduct(pid) { return this.allProducts.find(p=>p.id===pid)||null },
+        sendFollowup(text) { this.inputText = text; this.$nextTick(()=>this.sendMsg()) },
         async submitFeedback(msg, type) {
-            if (msg._feedback === type) return  // 重复点击同一按钮，不处理
-            msg._feedback = type
-            // 找到前一条用户消息作为提问
-            const idx = this.chatMessages.indexOf(msg)
-            const prev = idx > 0 ? this.chatMessages[idx - 1] : null
-            fetch('/api/user/feedback', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    conversation_id: this.conversationId || '',
-                    user_message: prev && prev.role === 'user' ? prev.content : '',
-                    ai_reply: msg.content || '',
-                    feedback: type
-                })
-            }).catch(() => {})  // 静默，不影响主流程
+            if (msg._feedback===type) return; msg._feedback = type
+            const idx = this.chatMessages.indexOf(msg); const prev = idx>0 ? this.chatMessages[idx-1] : null
+            fetch('/api/user/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId||'',user_message:prev&&prev.role==='user'?prev.content:'',ai_reply:msg.content||'',feedback:type})}).catch(()=>{})
         },
-        esc(text) {
-            // 防 XSS：纯文本转义
-            const d = document.createElement('div'); d.textContent = text; return d.innerHTML
-        },
-        fmtToken(text) {
-            // 流式 token 实时转义并换行
-            return this.esc(text).replace(/\n/g, '<br>')
-        },
+        esc(text) { const d=document.createElement('div'); d.textContent=text; return d.innerHTML },
+        fmtToken(text) { return this.esc(text).replace(/\n/g,'<br>') },
         cleanMarkdown(raw) {
-            // 清洗 AI 回复中的 markdown 格式和装饰符号
-            let h = this.esc(raw)
-            h = h.replace(/\n/g, '<br>')
-            // 去掉 ```json ... ``` 代码块（JSON 数据不需要展示）
-            h = h.replace(/```json[\s\S]*?```/g, '')
-            // 去掉 markdown 标题前缀（## / ### 等）
-            h = h.replace(/^#{1,6}\s*/gm, '')
-            // 去掉加粗标记 **text**
-            h = h.replace(/\*\*(.*?)\*\*/g, '$1')
-            // 去掉成对的星号（斜体）
-            h = h.replace(/\*(.*?)\*/g, '$1')
-            // 去掉 emoji 数字序号（1️⃣2️⃣3️⃣）
-            h = h.replace(/[0-9]️⃣/g, '')
-            // 去掉表情装饰符号
-            h = h.replace(/[⭐✨\u{1F525}\u{1F44D}\u{1F4AF}✅\u{1F31F}\u{1F389}\u{1F4A5}\u{1F308}\u{1F48E}]/gu, '')
+            let h = this.esc(raw); h = h.replace(/\n/g,'<br>')
+            h = h.replace(/```json[\s\S]*?```/g,'')
+            h = h.replace(/^#{1,6}\s*/gm,'')
+            h = h.replace(/\*\*(.*?)\*\*/g,'$1')
+            h = h.replace(/\*(.*?)\*/g,'$1')
+            h = h.replace(/[0-9]️⃣/g,'')
+            h = h.replace(/[⭐✨\u{1F525}\u{1F44D}\u{1F4AF}✅\u{1F31F}\u{1F389}\u{1F4A5}\u{1F308}\u{1F48E}]/gu,'')
             return h
         },
-        scrollChat() { const el = this.$refs.msgContainer; if (el) el.scrollTop = el.scrollHeight },
-
-        // 保存 AI 对话历史到后端（静默，不影响用户体验）
+        scrollChat() { const el=this.$refs.msgContainer; if(el) el.scrollTop=el.scrollHeight },
         saveChatHistory(userMsg, aiReply) {
-            fetch('/api/user/ai-history', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    conversation_id: this.conversationId || '',
-                    user_message: userMsg,
-                    ai_reply: aiReply
-                })
-            }).catch(() => {}) // 失败静默，不影响主流程
+            fetch('/api/user/ai-history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId||'',user_message:userMsg,ai_reply:aiReply})}).catch(()=>{})
         },
-
-        goProfile() { window.location.href = '/profile.html' },
-        async logout() {
-            if (!confirm('确定要退出登录吗？')) return
-            try { await fetch('/api/user/logout', { method: 'POST' }) } catch(e) {}
-            window.location.href = '/login.html'
-        },
-
-        // ====== 管理员 CRUD ======
-        resetForm() {
-            this.form = { name: '', brand: '', category: '', gender: '', price: 0, stock: 0, imageUrl: '', color: '', sizeRange: '', description: '' }
-            this.editingId = null
-        },
-        openAdd() {
-            this.resetForm()
-            this.showModal = true
-        },
-        openEdit(p) {
-            this.editingId = p.id
-            this.form = { name: p.name, brand: p.brand, category: p.category, gender: p.gender, price: p.price, stock: p.stock, imageUrl: p.imageUrl || '', color: p.color || '', sizeRange: p.sizeRange || '', description: p.description || '' }
-            this.showModal = true
-        },
+        goProfile() { window.location.href='/profile.html' },
+        async logout() { if(!confirm('确定要退出登录吗？')) return; try{await fetch('/api/user/logout',{method:'POST'})}catch(e){}; window.location.href='/login.html' },
+        // 管理员 CRUD
+        resetForm() { this.form={name:'',brand:'',category:'',gender:'',price:0,stock:0,imageUrl:'',color:'',sizeRange:'',description:''}; this.editingId=null },
+        openAdd() { this.resetForm(); this.showModal=true },
+        openEdit(p) { this.editingId=p.id; this.form={name:p.name,brand:p.brand,category:p.category,gender:p.gender,price:p.price,stock:p.stock,imageUrl:p.imageUrl||'',color:p.color||'',sizeRange:p.sizeRange||'',description:p.description||''}; this.showModal=true },
         async saveProduct() {
-            if (!this.form.name || !this.form.brand) return alert('请至少填写名称和品牌')
+            if (!this.form.name||!this.form.brand) return alert('请至少填写名称和品牌')
             this.saving = true
             try {
-                const method = this.editingId ? 'PUT' : 'POST'
-                const url = this.editingId ? '/api/admin/products/' + this.editingId : '/api/admin/products'
-                const r = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.form)
-                })
+                const method = this.editingId?'PUT':'POST'; const url = this.editingId?'/api/admin/products/'+this.editingId:'/api/admin/products'
+                const r = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.form)})
                 const d = await r.json()
-                if (d.code === 200) {
-                    this.showModal = false
-                    await this.loadProducts()
-                    this.filterProducts()
-                } else {
-                    alert(d.message || '操作失败')
-                }
-            } catch(e) { alert('网络异常') }
-            finally { this.saving = false }
+                if (d.code===200) { this.showModal=false; await this.loadProducts(); this.filterProducts() }
+                else { alert(d.message||'操作失败') }
+            } catch(e) { alert('网络异常') } finally { this.saving=false }
         },
         async deleteProduct(p) {
-            if (!confirm('确定删除「' + p.name + '」？此操作不可撤销。')) return
+            if (!confirm('确定删除「'+p.name+'」？此操作不可撤销。')) return
             try {
-                const r = await fetch('/api/admin/products/' + p.id, { method: 'DELETE' })
+                const r = await fetch('/api/admin/products/'+p.id,{method:'DELETE'})
                 const d = await r.json()
-                if (d.code === 200) {
-                    await this.loadProducts()
-                    this.filterProducts()
-                } else {
-                    alert(d.message || '删除失败')
-                }
+                if (d.code===200) { await this.loadProducts(); this.filterProducts() }
+                else { alert(d.message||'删除失败') }
             } catch(e) { alert('网络异常') }
         }
     }

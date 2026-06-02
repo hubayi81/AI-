@@ -24,23 +24,52 @@
             display: flex; flex-direction: column; justify-content: center;
             padding: 80px 64px;
         }
+        /* 运动鞋图片轮播：4 张图片叠在底层，轮流淡入淡出
+           为什么用 background-image + CSS animation？—— 纯 CSS 轮播不依赖 JS，性能好且不会阻塞渲染 */
+        .brand-slide {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            opacity: 0; animation: carousel 16s infinite;
+            /* 回退背景：图片未加载时显示品牌色渐变 */
+            background-color: var(--ink);
+        }
+        /* 每张轮播图用 Unsplash 运动鞋素材，图片挂了就显示对应的品牌色块 */
+        .brand-slide:nth-child(1) {
+            background-image: url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80');
+            animation-delay: 0s;
+        }
+        .brand-slide:nth-child(2) {
+            background-image: url('https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=800&q=80');
+            animation-delay: 4s;
+        }
+        .brand-slide:nth-child(3) {
+            background-image: url('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&q=80');
+            animation-delay: 8s;
+        }
+        .brand-slide:nth-child(4) {
+            background-image: url('https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=800&q=80');
+            animation-delay: 12s;
+        }
+        @keyframes carousel {
+            0%   { opacity: 0; }
+            4%   { opacity: 1; }   /* 快速淡入 */
+            20%  { opacity: 1; }   /* 保持显示 */
+            28%  { opacity: 0; }   /* 快速淡出 */
+            100% { opacity: 0; }
+        }
+        /* 暗色遮罩：保证文字在任何图片上都可读 */
+        .brand::after {
+            content: ''; position: absolute; inset: 0; z-index: 1;
+            background: linear-gradient(135deg, rgba(26,26,46,0.85) 0%, rgba(26,26,46,0.55) 50%, rgba(26,26,46,0.7) 100%);
+        }
         .brand::before {
-            content: ''; position: absolute; inset: 0; opacity: 0.07;
+            content: ''; position: absolute; inset: 0; z-index: 0;
+            opacity: 0.06;
             background: repeating-linear-gradient(-34deg, transparent, transparent 10px, var(--gold) 10px, var(--gold) 12px);
             animation: drift 24s linear infinite;
         }
         @keyframes drift { to { background-position: 240px 0; } }
-        .brand::after {
-            content: ''; position: absolute;
-            width: 520px; height: 520px; top: -160px; right: -200px;
-            background: radial-gradient(circle, rgba(245,133,31,0.14) 0%, transparent 70%);
-            animation: glow 6s ease-in-out infinite;
-        }
-        @keyframes glow {
-            0%,100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.18); opacity: 1; }
-        }
-        .brand-content { position: relative; z-index: 1; }
+        .brand-content { position: relative; z-index: 2; }
         .brand-num {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
             font-size: 150px; font-weight: 900; line-height: 1;
@@ -64,9 +93,16 @@
         /* ====== 右侧表单区 ====== */
         .form-side {
             flex: 1; display: flex; align-items: center; justify-content: center;
-            background: var(--cream); padding: 40px;
+            background: var(--cream);
+            background-image: radial-gradient(ellipse at 60% 0%, rgba(245,133,31,0.04) 0%, transparent 50%);
+            padding: 40px;
         }
-        .form-card { width: 100%; max-width: 392px; }
+        .form-card {
+            width: 100%; max-width: 392px;
+            background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(232,224,211,0.5); border-radius: 20px;
+            padding: 40px 36px; box-shadow: 0 8px 40px rgba(44,36,22,0.06);
+        }
 
         .form-label {
             font-size: 10px; text-transform: uppercase; letter-spacing: 4px;
@@ -196,6 +232,12 @@
 <body>
 
 <div class="brand">
+    <!-- 4 张运动鞋图片轮播 -->
+    <div class="brand-slide"></div>
+    <div class="brand-slide"></div>
+    <div class="brand-slide"></div>
+    <div class="brand-slide"></div>
+
     <div class="brand-content">
         <div class="brand-num anim-1">01</div>
         <div class="brand-title anim-2"><span>AI</span> 鞋类<br>推荐助手</div>

@@ -6,80 +6,159 @@
     <title>个人中心 - AI鞋类导购</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
+        /* ===== Design Tokens（与 index.html 统一） ===== */
         :root {
-            --bg: #FBF8F2;
-            --card: #FFFFFF;
-            --gold: #F5851F;
-            --gold-hover: #E0750F;
-            --text: #2C2416;
-            --warm-gray: #8B7E6A;
-            --border: #E8DFD0;
-            --danger: #D1524F;
-            --shadow: 0 2px 16px rgba(44,36,22,0.06);
+            --bg: #FBF8F3; --card: #FFFFFF; --gold: #F5851F; --gold-light: #FFB347;
+            --text: #2C2416; --warm-gray: #8B7E6A; --border: #E8DFD0; --danger: #D1524F;
+            --ink: #1A1A2E; --shadow: 0 2px 16px rgba(44,36,22,0.06);
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(ellipse at 60% 0%, rgba(245,133,31,0.04) 0%, transparent 50%);
+            color: var(--text); min-height: 100vh;
+        }
 
-        /* ===== 顶栏 ===== */
-        .navbar { height: 60px; background: #FFF; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 100; }
-        .nav-left { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
+        /* ===== 顶栏（玻璃态，与 index 统一） ===== */
+        .navbar {
+            height: 60px; background: rgba(26,26,46,0.88); backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px; position: sticky; top: 0; z-index: 100;
+        }
+        .nav-left { font-size: 17px; font-weight: 700; letter-spacing: 1px; color: #fff; }
         .nav-right { display: flex; align-items: center; gap: 16px; }
-        .nav-right a { text-decoration: none; color: var(--text); font-size: 14px; }
-        .nav-right a:hover { color: var(--gold); }
-        .nav-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #F5851F, #E6A817); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; cursor: default; }
+        .nav-right a { text-decoration: none; color: rgba(255,255,255,0.6); font-size: 14px; transition: color 0.25s; }
+        .nav-right a:hover { color: #fff; }
+        .nav-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            box-shadow: 0 0 16px rgba(245,133,31,0.35);
+            color: #FFF; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 700; cursor: default;
+        }
 
         /* ===== 布局 ===== */
         .page-wrap { display: flex; max-width: 1100px; margin: 0 auto; padding: 28px 20px; gap: 28px; }
         .main-content { flex: 1; min-width: 0; }
 
-        /* ===== 用户卡片 ===== */
-        .user-card { background: var(--card); border-radius: 14px; padding: 28px; display: flex; align-items: center; gap: 20px; box-shadow: var(--shadow); margin-bottom: 24px; }
-        .user-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #F5851F, #E6A817); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; flex-shrink: 0; }
+        /* ===== 用户卡片（渐变背景 + 头像光晕） ===== */
+        .user-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,248,240,0.85));
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(232,224,211,0.6);
+            border-radius: 16px; padding: 32px; display: flex; align-items: center; gap: 24px;
+            box-shadow: 0 4px 32px rgba(44,36,22,0.06); margin-bottom: 24px;
+            transition: box-shadow 0.3s var(--ease-out-expo);
+        }
+        .user-card:hover { box-shadow: 0 8px 40px rgba(44,36,22,0.1); }
+        .user-avatar {
+            width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #FFF; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; font-weight: 700;
+            /* 头像光晕 */
+            box-shadow: 0 0 0 8px rgba(245,133,31,0.08), 0 0 32px rgba(245,133,31,0.2);
+        }
         .user-meta { line-height: 1.6; }
-        .user-name { font-size: 20px; font-weight: 700; }
-        .user-role { font-size: 12px; color: var(--gold); background: #FFF7EF; display: inline-block; padding: 2px 10px; border-radius: 10px; margin-left: 8px; }
-        .user-date { font-size: 13px; color: var(--warm-gray); margin-top: 4px; }
+        .user-name { font-size: 22px; font-weight: 700; }
+        .user-role {
+            font-size: 12px; color: var(--gold); background: rgba(245,133,31,0.08);
+            display: inline-block; padding: 3px 12px; border-radius: 12px; margin-left: 8px;
+            font-weight: 600; letter-spacing: 1px;
+        }
+        .user-date { font-size: 13px; color: var(--warm-gray); margin-top: 6px; }
 
-        /* ===== Tab 切换 ===== */
-        .tab-bar { display: flex; gap: 0; margin-bottom: 20px; background: var(--card); border-radius: 12px; padding: 4px; box-shadow: var(--shadow); }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-size: 14px; cursor: pointer; border-radius: 9px; color: var(--warm-gray); transition: all 0.2s; font-weight: 500; }
-        .tab-btn.active { background: var(--gold); color: #FFF; font-weight: 600; }
+        /* ===== Tab 切换（胶囊型） ===== */
+        .tab-bar {
+            display: flex; gap: 0; margin-bottom: 20px;
+            background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(232,224,211,0.6);
+            border-radius: 14px; padding: 5px; box-shadow: var(--shadow);
+        }
+        .tab-btn {
+            flex: 1; padding: 13px; border: none; background: transparent; font-size: 14px;
+            cursor: pointer; border-radius: 10px; color: var(--warm-gray);
+            transition: all 0.3s var(--ease-out-expo); font-weight: 500; font-family: inherit;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #FFF; font-weight: 600; box-shadow: 0 4px 16px rgba(245,133,31,0.2);
+        }
 
-        /* ===== 收藏鞋子卡片（跟首页类似） ===== */
-        .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-        .fav-card { background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform 0.15s; }
-        .fav-card:hover { transform: translateY(-2px); }
-        .fav-img { width: 100%; height: 160px; object-fit: cover; background: #F0EBE0; }
-        .fav-thumb { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: rgba(255,255,255,0.6); }
+        /* ===== 收藏卡片（玻璃态） ===== */
+        .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+        .fav-card {
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(232,224,211,0.6); border-radius: 14px; overflow: hidden;
+            box-shadow: var(--shadow); display: flex; flex-direction: column;
+            transition: all 0.35s var(--ease-out-expo);
+        }
+        .fav-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(44,36,22,0.1); border-color: rgba(245,133,31,0.2); }
+        .fav-img { width: 100%; height: 170px; object-fit: cover; background: #F0EBE0; }
+        .fav-thumb {
+            width: 100%; height: 170px; display: flex; align-items: center; justify-content: center;
+            font-size: 52px; font-weight: 700; color: rgba(255,255,255,0.5);
+            position: relative; overflow: hidden;
+        }
+        /* 品牌色块加纹理 */
+        .fav-thumb::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.3;
+            background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.2) 8px, rgba(255,255,255,0.2) 16px);
+        }
+        .fav-thumb span { position: relative; z-index: 1; }
         .fav-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; }
-        .fav-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .fav-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
         .fav-brand { font-size: 12px; color: var(--warm-gray); margin-bottom: 8px; }
-        .fav-price { font-size: 18px; font-weight: 700; color: var(--gold); margin-top: auto; }
-        .fav-actions { padding: 0 16px 14px; display: flex; gap: 8px; }
-        .btn-unfav { flex: 1; padding: 8px; border: 1px solid var(--border); background: #FFF; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--danger); }
+        .fav-price { font-size: 20px; font-weight: 700; color: var(--gold); margin-top: auto; }
+        .fav-actions { padding: 0 16px 16px; display: flex; gap: 8px; }
+        .btn-unfav {
+            flex: 1; padding: 9px; border: 1px solid var(--border); background: #FFF;
+            border-radius: 10px; cursor: pointer; font-size: 13px; font-family: inherit;
+            color: var(--danger); transition: all 0.25s var(--ease-out-expo);
+        }
         .btn-unfav:hover { background: #FFF5F5; border-color: var(--danger); }
 
-        /* ===== AI 历史 ===== */
-        .history-list { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+        /* ===== AI 历史（玻璃态列表） ===== */
+        .history-list {
+            background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(232,224,211,0.6); border-radius: 14px;
+            box-shadow: var(--shadow); overflow: hidden;
+        }
         .history-group { border-bottom: 1px solid var(--border); }
         .history-group:last-child { border-bottom: none; }
-        .history-date { padding: 14px 20px; font-size: 12px; color: var(--warm-gray); background: #FAF7F0; border-bottom: 1px solid var(--border); font-weight: 500; }
-        /* 对话气泡（仿聊天） */
-        .history-item { padding: 12px 20px; display: flex; gap: 12px; align-items: flex-start; }
-        .history-item.ai { background: #FAFAF8; }
-        .history-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-        .history-avatar.user { background: #F5851F20; color: var(--gold); }
+        .history-date {
+            padding: 14px 20px; font-size: 12px; color: var(--warm-gray);
+            background: rgba(250,247,240,0.6); border-bottom: 1px solid var(--border);
+            font-weight: 500; letter-spacing: 1px;
+        }
+        .history-item { padding: 14px 20px; display: flex; gap: 12px; align-items: flex-start; }
+        .history-item.ai { background: rgba(250,250,248,0.5); }
+        .history-avatar {
+            width: 32px; height: 32px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+        }
+        .history-avatar.user { background: rgba(245,133,31,0.12); color: var(--gold); }
         .history-avatar.ai { background: #E8DFD0; color: #6B5E4A; }
-        .history-content { font-size: 14px; line-height: 1.6; word-break: break-word; }
+        .history-content { font-size: 14px; line-height: 1.7; word-break: break-word; }
         .history-content p { margin: 0; }
 
-        /* 空状态 */
-        .empty-state { text-align: center; padding: 64px 20px; color: var(--warm-gray); }
-        .empty-icon { font-size: 48px; margin-bottom: 12px; }
-        .empty-text { font-size: 15px; }
-
-        /* 加载中 */
+        /* ===== 空状态（SVG 插画） ===== */
+        .empty-state { text-align: center; padding: 72px 20px; color: var(--warm-gray); }
+        .empty-icon {
+            width: 100px; height: 100px; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .empty-text { font-size: 15px; line-height: 1.8; }
         .loading-row { text-align: center; padding: 40px; color: var(--warm-gray); }
+
+        /* ===== 页面入场动画 ===== */
+        .page-wrap { animation: pageIn 0.5s var(--ease-out-expo) both; }
+        @keyframes pageIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
         @media (max-width: 640px) {
             .page-wrap { padding: 16px 12px; }
@@ -90,7 +169,6 @@
 </head>
 <body>
 <div id="app">
-    <!-- 顶栏 -->
     <nav class="navbar">
         <a href="/index.html" class="nav-left" style="text-decoration:none;color:inherit;">👟 AI 鞋类导购</a>
         <div class="nav-right">
@@ -99,10 +177,9 @@
         </div>
     </nav>
 
-    <!-- 主体布局 -->
     <div class="page-wrap">
         <div class="main-content">
-            <!-- 用户信息卡片 -->
+            <!-- 用户卡片（渐变 + 光晕头像） -->
             <div class="user-card">
                 <div class="user-avatar">{{ avatarChar }}</div>
                 <div class="user-meta">
@@ -116,26 +193,37 @@
                 </div>
             </div>
 
-            <!-- Tab 切换 -->
+            <!-- Tab -->
             <div class="tab-bar">
-                <button :class="'tab-btn' + (tab === 'fav' ? ' active' : '')" @click="tab='fav'">❤️ 我的收藏</button>
-                <button :class="'tab-btn' + (tab === 'history' ? ' active' : '')" @click="tab='history'; loadHistory()">💬 AI 对话历史</button>
+                <button :class="'tab-btn' + (tab==='fav' ? ' active' : '')" @click="tab='fav'">❤️ 我的收藏</button>
+                <button :class="'tab-btn' + (tab==='history' ? ' active' : '')" @click="tab='history'; loadHistory()">💬 AI 对话历史</button>
             </div>
 
-            <!-- ===== 收藏 tab ===== -->
-            <div v-if="tab === 'fav'" v-cloak>
+            <!-- 收藏 tab -->
+            <div v-if="tab==='fav'" v-cloak>
                 <div v-if="loading" class="loading-row">加载中...</div>
-                <div v-else-if="favList.length === 0" class="empty-state">
-                    <div class="empty-icon">🤍</div>
+                <div v-else-if="favList.length===0" class="empty-state">
+                    <!-- 空收藏 SVG 插画：心形 + 书签 -->
+                    <div class="empty-icon">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- 大心形轮廓 -->
+                            <path d="M50 80 C28 62 14 48 14 34 C14 22 24 14 35 14 C42 14 48 18 50 22 C52 18 58 14 65 14 C76 14 86 22 86 34 C86 48 72 62 50 80Z"
+                                  fill="#FBF3E8" stroke="#F5851F" stroke-width="2" stroke-linejoin="round"/>
+                            <!-- 心形中心小书签 -->
+                            <path d="M42 30 L42 52 L50 46 L58 52 L58 30Z" fill="none" stroke="#D6CBB8" stroke-width="1.8" stroke-linejoin="round"/>
+                            <!-- 右下角小十字 -->
+                            <line x1="74" y1="66" x2="82" y2="66" stroke="#E8DFD3" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="78" y1="62" x2="78" y2="70" stroke="#E8DFD3" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
                     <div class="empty-text">还没有收藏任何鞋款<br>去首页浏览并点击收藏吧</div>
                 </div>
                 <div v-else class="fav-grid">
                     <div v-for="item in favList" :key="item.id" class="fav-card">
-                        <!-- 图片：有 URL 用 img，没有用品牌色块 -->
                         <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="fav-img"
-                             @error="e => e.target.style.display='none'">
-                        <div v-else class="fav-thumb" :style="{background: brandBg(item.brand)}">
-                            {{ (item.name || '鞋').charAt(0) }}
+                             @error="e=>e.target.style.display='none'">
+                        <div v-else class="fav-thumb" :style="{background:brandBg(item.brand)}">
+                            <span>{{ (item.name||'鞋').charAt(0) }}</span>
                         </div>
                         <div class="fav-body">
                             <div class="fav-name">{{ item.name }}</div>
@@ -143,26 +231,44 @@
                             <div class="fav-price">¥{{ item.price }}</div>
                         </div>
                         <div class="fav-actions">
-                            <button class="btn-unfav" @click="removeFav(item.productId || item.id)">取消收藏</button>
+                            <button class="btn-unfav" @click="removeFav(item.productId||item.id)">取消收藏</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== AI 历史 tab ===== -->
-            <div v-if="tab === 'history'" v-cloak>
+            <!-- AI 历史 tab -->
+            <div v-if="tab==='history'" v-cloak>
                 <div v-if="historyLoading" class="loading-row">加载中...</div>
-                <div v-else-if="historyList.length === 0" class="empty-state">
-                    <div class="empty-icon">💬</div>
+                <div v-else-if="historyList.length===0" class="empty-state">
+                    <!-- 空对话历史 SVG 插画：气泡 + 时钟 -->
+                    <div class="empty-icon">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- 对话气泡 -->
+                            <rect x="18" y="18" width="54" height="40" rx="12" fill="#FBF3E8" stroke="#E8DFD3" stroke-width="2"/>
+                            <!-- 气泡尾巴（左下角小三角） -->
+                            <path d="M22 58 L14 72 L32 58" fill="#FBF3E8" stroke="#E8DFD3" stroke-width="2"/>
+                            <!-- 三条横线（代表空内容） -->
+                            <rect x="32" y="30" width="24" height="3" rx="1.5" fill="#E8DFD3"/>
+                            <rect x="32" y="38" width="18" height="3" rx="1.5" fill="#E8DFD3"/>
+                            <rect x="32" y="46" width="12" height="3" rx="1.5" fill="#E8DFD3"/>
+                            <!-- 右边旋转时钟 -->
+                            <circle cx="76" cy="34" r="16" fill="#FFF" stroke="#F5851F" stroke-width="1.5"/>
+                            <line x1="76" y1="34" x2="76" y2="24" stroke="#F5851F" stroke-width="1.8" stroke-linecap="round"/>
+                            <line x1="76" y1="34" x2="82" y2="36" stroke="#F5851F" stroke-width="1.8" stroke-linecap="round"/>
+                            <!-- 时钟中心点 -->
+                            <circle cx="76" cy="34" r="2" fill="#F5851F"/>
+                        </svg>
+                    </div>
                     <div class="empty-text">暂无 AI 对话记录<br>去 AI 导购页面聊几句吧</div>
                 </div>
                 <div v-else class="history-list">
                     <template v-for="(group, gi) in groupedHistory" :key="gi">
                         <div class="history-group">
                             <div class="history-date">{{ group.label }}</div>
-                            <div v-for="(h, hi) in group.items" :key="hi" :class="'history-item ' + h.role">
-                                <div :class="'history-avatar ' + h.role">
-                                    {{ h.role === 'user' ? avatarChar : '🤖' }}
+                            <div v-for="(h, hi) in group.items" :key="hi" :class="'history-item '+h.role">
+                                <div :class="'history-avatar '+h.role">
+                                    {{ h.role==='user' ? avatarChar : '🤖' }}
                                 </div>
                                 <div class="history-content" v-html="fmtHistoryContent(h.content)"></div>
                             </div>
@@ -176,149 +282,66 @@
 
 <script>
 const { createApp } = Vue
-
 createApp({
     data() {
         return {
-            user: null,
-            tab: 'fav',           // 'fav' 或 'history'
-            favList: [],           // 收藏列表（含商品详情）
-            loading: false,
-            historyList: [],       // AI 历史原始数据
-            historyLoading: false,
+            user: null, tab: 'fav', favList: [], loading: false,
+            historyList: [], historyLoading: false,
         }
     },
-
     computed: {
-        /** 用户名首字，作为头像 */
-        avatarChar() {
-            return this.user && this.user.username ? this.user.username.charAt(0).toUpperCase() : '?'
-        },
-        /** 把历史记录按日期+会话分组，方便按天展示 */
+        avatarChar() { return this.user&&this.user.username ? this.user.username.charAt(0).toUpperCase() : '?' },
         groupedHistory() {
-            const groups = []
-            let lastDate = '', lastConv = ''
+            const groups = []; let lastDate='', lastConv=''
             for (const h of this.historyList) {
                 const d = this.fmtDate(h.createTime)
-                const key = d + '|' + (h.conversationId || '')
-                if (key !== lastDate + '|' + lastConv) {
-                    // 新的一天或新的会话 → 新建分组
-                    groups.push({ label: d + (h.conversationId ? ' · 会话 ' + h.conversationId : ''), items: [h] })
-                } else {
-                    groups[groups.length - 1].items.push(h)
-                }
-                lastDate = d
-                lastConv = h.conversationId || ''
+                const key = d+'|'+(h.conversationId||'')
+                if (key !== lastDate+'|'+lastConv) {
+                    groups.push({label:d+(h.conversationId?' · 会话 '+h.conversationId:''),items:[h]})
+                } else { groups[groups.length-1].items.push(h) }
+                lastDate=d; lastConv=h.conversationId||''
             }
             return groups
         }
     },
-
-    async mounted() {
-        // 先查登录状态
-        await this.checkLogin()
-        if (this.user) {
-            this.loadFavorites()
-        }
-    },
-
+    async mounted() { await this.checkLogin(); if (this.user) this.loadFavorites() },
     methods: {
-        /** 检查登录状态 —— 未登录跳回登录页 */
         async checkLogin() {
-            try {
-                const r = await fetch('/api/user/status')
-                const d = await r.json()
-                if (d.code === 200) {
-                    this.user = d.data
-                } else {
-                    window.location.href = '/login.html'
-                }
-            } catch(e) {
-                window.location.href = '/login.html'
-            }
+            try { const r=await fetch('/api/user/status'); const d=await r.json()
+                if (d.code===200) this.user=d.data; else window.location.href='/login.html'
+            } catch(e) { window.location.href='/login.html' }
         },
-
-        /** 加载收藏列表（需要连商品表查详情，这里前端根据 productId 聚合） */
         async loadFavorites() {
-            this.loading = true
+            this.loading=true
             try {
-                // 1. 拿收藏 ID 列表
-                const r = await fetch('/api/user/favorites')
-                const d = await r.json()
-                if (d.code !== 200) { this.loading = false; return }
-
-                const favs = d.data  // [{id, userId, productId, createTime}, ...]
-                if (favs.length === 0) { this.favList = []; this.loading = false; return }
-
-                // 2. 拿全量商品（用于拼接详情）
-                const r2 = await fetch('/api/products')
-                const d2 = await r2.json()
-                const allProducts = d2.code === 200 ? d2.data : []
-
-                // 3. 按 productId 匹配商品信息
-                const productMap = {}
-                allProducts.forEach(p => { productMap[p.id] = p })
-
-                this.favList = favs.map(f => {
-                    const p = productMap[f.productId] || {}
-                    return { ...f, ...p }  // 合并收藏记录 + 商品详情
-                })
-            } catch(e) {
-                // 静默处理
-            } finally {
-                this.loading = false
-            }
+                const r=await fetch('/api/user/favorites'); const d=await r.json()
+                if (d.code!==200) { this.loading=false; return }
+                const favs = d.data
+                if (favs.length===0) { this.favList=[]; this.loading=false; return }
+                const r2=await fetch('/api/products'); const d2=await r2.json()
+                const allProducts = d2.code===200 ? d2.data : []
+                const productMap = {}; allProducts.forEach(p=>{productMap[p.id]=p})
+                this.favList = favs.map(f=>{const p=productMap[f.productId]||{}; return {...f,...p}})
+            } catch(e) {} finally { this.loading=false }
         },
-
-        /** 取消收藏 */
         async removeFav(productId) {
-            try {
-                await fetch('/api/user/favorite/' + productId, { method: 'DELETE' })
-                // 从列表中移除
-                this.favList = this.favList.filter(item => (item.productId || item.id) !== productId)
+            try { await fetch('/api/user/favorite/'+productId,{method:'DELETE'})
+                this.favList = this.favList.filter(item=>(item.productId||item.id)!==productId)
             } catch(e) {}
         },
-
-        /** 加载 AI 对话历史 */
         async loadHistory() {
-            if (this.historyList.length > 0) return // 已加载过，不重复请求
-            this.historyLoading = true
-            try {
-                const r = await fetch('/api/user/ai-history?limit=100')
-                const d = await r.json()
-                if (d.code === 200) {
-                    // 后端返回的是倒序（最新在前），前端展示正序就要反过来
-                    this.historyList = (d.data || []).reverse()
-                }
-            } catch(e) {}
-            this.historyLoading = false
+            if (this.historyList.length>0) return; this.historyLoading=true
+            try { const r=await fetch('/api/user/ai-history?limit=100'); const d=await r.json()
+                if (d.code===200) this.historyList = (d.data||[]).reverse()
+            } catch(e) {} finally { this.historyLoading=false }
         },
-
-        /** 格式化 AI 历史内容（简单换行 + 防 XSS） */
         fmtHistoryContent(text) {
-            if (!text) return ''
-            const d = document.createElement('div')
-            d.textContent = text
-            return d.innerHTML.replace(/\n/g, '<br>')
+            if (!text) return ''; const d=document.createElement('div'); d.textContent=text; return d.innerHTML.replace(/\n/g,'<br>')
         },
-
-        // ---- 工具方法 ----
-
-        fmtDate(str) {
-            if (!str) return ''
-            // "2025-06-02T14:30:00" → "2025-06-02"
-            return str.substring(0, 10)
-        },
-
-        /** 根据品牌名返回颜色，用于无图片时的色块背景 */
+        fmtDate(str) { return str ? str.substring(0,10) : '' },
         brandBg(brand) {
-            const colors = {
-                'Nike': '#F5851F', 'Adidas': '#000', 'Converse': '#D1524F',
-                'Vans': '#E03E2D', 'New Balance': '#A0A0A0', 'Asics': '#2C5AA0',
-                'On': '#000', 'Crocs': '#4A8B3F', 'Puma': '#000', 'Li-Ning': '#E60012',
-                'Anta': '#E60012', '361°': '#F5851F', 'Xtep': '#000',
-            }
-            return colors[brand] || '#B0A590'
+            const colors={'Nike':'#F5851F','Adidas':'#000','Converse':'#D1524F','Vans':'#E03E2D','New Balance':'#A0A0A0','Asics':'#2C5AA0','On':'#000','Crocs':'#4A8B3F','Puma':'#000','Li-Ning':'#E60012','Anta':'#E60012','361°':'#F5851F','Xtep':'#000'}
+            return colors[brand]||'#B0A590'
         }
     }
 }).mount('#app')
