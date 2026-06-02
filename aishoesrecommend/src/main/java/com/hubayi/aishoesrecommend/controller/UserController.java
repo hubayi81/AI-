@@ -27,16 +27,19 @@ public class UserController {
         return Result.success("注册成功");
     }
 
-    // 登录
+    // 登录：isAdmin 参数来自前端"管理员登录"开关
     @PostMapping("/login")
     public Result<String> login(@RequestParam String username,
                                 @RequestParam String password,
+                                @RequestParam(defaultValue = "false") boolean isAdmin,
                                 HttpSession session) {
-        User user = userService.login(username, password);
+        User user = userService.login(username, password, isAdmin);
         if (user == null) {
-            return Result.error(401, "用户名或密码错误");
+            // 管理员登录失败给更明确的提示
+            String msg = isAdmin ? "用户名或密码错误，或非管理员账号" : "用户名或密码错误";
+            return Result.error(401, msg);
         }
-        session.setAttribute("user", user);  // 登录成功，存 session
+        session.setAttribute("user", user);
         return Result.success("登录成功");
     }
 

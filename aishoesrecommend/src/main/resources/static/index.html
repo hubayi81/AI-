@@ -9,6 +9,7 @@
             --ink: #1A1A2E; --cream: #FEF9F0; --gold: #F5851F;
             --gold-light: #FFB347; --white: #FFF; --warm-gray: #8C8279;
             --border: #E8DFD3; --success: #3C9D70; --danger: #E0554A;
+            --sidebar-w: 220px;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -17,7 +18,7 @@
             color: var(--ink); min-height: 100vh;
         }
 
-        /* ====== 导航栏 ====== */
+        /* ====== 顶部导航栏 ====== */
         .nav-bar {
             position: sticky; top: 0; z-index: 100;
             background: rgba(26,26,46,0.94); backdrop-filter: blur(16px);
@@ -40,7 +41,6 @@
             50% { transform: scale(1.8); opacity: 0.4; }
         }
         .nav-right { display: flex; align-items: center; gap: 24px; }
-        .nav-user { color: rgba(255,255,255,0.55); font-size: 13px; }
         .btn-out {
             background: transparent; border: 1px solid rgba(255,255,255,0.18);
             color: rgba(255,255,255,0.5); font-size: 12px; padding: 6px 20px;
@@ -48,6 +48,88 @@
             transition: all 0.25s ease;
         }
         .btn-out:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* ====== 滑动侧边栏 ====== */
+        .sidebar-wrap {
+            position: fixed; left: 0; top: 0; bottom: 0; z-index: 300;
+            display: flex;
+        }
+        .sidebar-trigger {
+            width: 36px; /* 鼠标触碰热区，36px 方便触发 */
+            height: 100%; flex-shrink: 0;
+            position: relative;
+        }
+        /* 热区上的视觉提示条 */
+        .sidebar-trigger::after {
+            content: '';
+            position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+            width: 4px; height: 48px; border-radius: 0 3px 3px 0;
+            background: var(--gold); opacity: 0.5; transition: opacity 0.3s;
+        }
+        .sidebar {
+            width: var(--sidebar-w); height: 100%; flex-shrink: 0;
+            background: var(--ink);
+            display: flex; flex-direction: column; padding: 28px 0 20px;
+            overflow-y: auto; overflow-x: hidden;
+            margin-left: calc(-1 * (var(--sidebar-w) + 36px));
+            transition: margin-left 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+        }
+        .sidebar-wrap:hover .sidebar { margin-left: 0; }
+        .sidebar-wrap:hover .sidebar-trigger::after { opacity: 0; }
+
+        .sidebar-logo {
+            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-size: 17px; font-weight: 900; color: var(--white); letter-spacing: 2px;
+            display: flex; align-items: center; gap: 10px; padding: 0 24px 32px;
+        }
+        .sidebar-logo-dot {
+            width: 8px; height: 8px; background: var(--gold); flex-shrink: 0;
+            animation: dotPulse 1.5s ease-in-out infinite;
+        }
+
+        /* 用户头像区 */
+        .sidebar-user {
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 24px 24px; margin-bottom: 24px; cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.08); transition: opacity 0.2s;
+        }
+        .sidebar-user:hover { opacity: 0.8; }
+        .user-avatar {
+            width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+            background: var(--gold); color: var(--white);
+            display: flex; align-items: center; justify-content: center;
+            font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
+            font-size: 18px; font-weight: 900;
+        }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name {
+            font-size: 14px; font-weight: 700; color: var(--white); line-height: 1.3;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .user-role {
+            font-size: 11px; color: var(--gold-light); letter-spacing: 1px;
+        }
+
+        /* 导航菜单 */
+        .sidebar-nav { flex: 1; padding: 0 14px; display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-nav .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 10px; font-size: 14px; font-weight: 600; font-family: inherit;
+            letter-spacing: 1px; cursor: pointer; border: none; background: transparent;
+            color: rgba(255,255,255,0.48); transition: all 0.25s ease; border-radius: 8px;
+            text-align: left; width: 100%;
+        }
+        .sidebar-nav .nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+        .sidebar-nav .nav-item.active {
+            background: rgba(245,133,31,0.14); color: var(--gold-light);
+            box-shadow: inset 0 0 0 1px rgba(245,133,31,0.2);
+        }
+        .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+
+        .sidebar-bottom { padding: 0 14px; margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-bottom .nav-item { color: rgba(255,255,255,0.35); }
+        .sidebar-bottom .nav-item:hover { color: var(--danger); }
 
         /* ====== Hero ====== */
         .hero {
@@ -81,17 +163,14 @@
             border: none; background: transparent; color: var(--warm-gray);
             position: relative; top: 2px;
         }
-        .tab-btn.active {
-            color: var(--ink);
-            border-bottom: 2px solid var(--gold);
-        }
+        .tab-btn.active { color: var(--ink); border-bottom: 2px solid var(--gold); }
         .tab-btn:hover:not(.active) { color: var(--ink); }
 
         /* ====== Tab 内容区 ====== */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* ====== Tab 1: AI 对话 ====== */
+        /* ====== AI 对话 ====== */
         .chat-wrapper {
             max-width: 800px; margin: 0 auto; padding: 0 20px;
             display: flex; flex-direction: column; height: calc(100vh - 220px);
@@ -103,9 +182,7 @@
         .chat-messages::-webkit-scrollbar { width: 4px; }
         .chat-messages::-webkit-scrollbar-thumb { background: #D6CBB8; border-radius: 2px; }
 
-        .quick-actions {
-            display: flex; gap: 10px; padding: 12px 0; flex-wrap: wrap;
-        }
+        .quick-actions { display: flex; gap: 10px; padding: 12px 0; flex-wrap: wrap; }
         .btn-quick {
             padding: 9px 20px; font-size: 13px; font-family: inherit;
             background: var(--white); border: 1px solid var(--border);
@@ -128,9 +205,7 @@
         }
         .ai .msg-avatar { background: #FFF4E8; color: var(--gold); font-size: 18px; }
         .user .msg-avatar { background: var(--ink); color: var(--white); }
-        .msg-bubble {
-            max-width: 75%; padding: 16px 20px; line-height: 1.7; font-size: 14px;
-        }
+        .msg-bubble { max-width: 75%; padding: 16px 20px; line-height: 1.7; font-size: 14px; }
         .ai .msg-bubble { background: var(--white); color: var(--ink); }
         .user .msg-bubble { background: var(--ink); color: var(--white); }
 
@@ -147,31 +222,19 @@
             font-family: "Arial Black", "Impact", sans-serif;
             font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.55);
         }
-        .rec-img {
-            width: 52px; height: 52px; border-radius: 6px; flex-shrink: 0;
-            object-fit: cover;
-        }
+        .rec-img { width: 52px; height: 52px; border-radius: 6px; flex-shrink: 0; object-fit: cover; }
         .rec-card:hover { background: #FFF4E8; transform: translateX(4px); }
-        .rec-rank {
-            font-family: "Arial Black", "Impact", sans-serif;
-            font-size: 22px; font-weight: 900; color: var(--gold); min-width: 32px;
-        }
+        .rec-rank { font-family: "Arial Black", "Impact", sans-serif; font-size: 22px; font-weight: 900; color: var(--gold); min-width: 32px; }
         .rec-info { flex: 1; }
         .rec-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
         .rec-reason { font-size: 12px; color: var(--warm-gray); line-height: 1.6; }
         .rec-right { text-align: right; flex-shrink: 0; }
-        .rec-score {
-            font-family: "Arial Black", "Impact", sans-serif;
-            font-size: 20px; font-weight: 900; color: var(--ink);
-        }
+        .rec-score { font-family: "Arial Black", "Impact", sans-serif; font-size: 20px; font-weight: 900; color: var(--ink); }
         .rec-score span { font-size: 11px; color: var(--warm-gray); }
         .rec-price { font-size: 12px; color: var(--gold); font-weight: 700; margin-top: 2px; }
 
         .typing { display: flex; gap: 5px; padding: 8px 0; }
-        .typing span {
-            width: 7px; height: 7px; background: var(--warm-gray); border-radius: 50%;
-            animation: bounce 1.2s infinite;
-        }
+        .typing span { width: 7px; height: 7px; background: var(--warm-gray); border-radius: 50%; animation: bounce 1.2s infinite; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce {
@@ -179,10 +242,7 @@
             30% { transform: translateY(-8px); }
         }
 
-        .chat-input-bar {
-            display: flex; gap: 12px; padding: 18px 0 24px;
-            border-top: 1px solid var(--border);
-        }
+        .chat-input-bar { display: flex; gap: 12px; padding: 18px 0 24px; border-top: 1px solid var(--border); }
         .chat-input {
             flex: 1; padding: 14px 18px; font-size: 14px; font-family: inherit;
             background: var(--white); border: 1px solid var(--border);
@@ -194,37 +254,26 @@
         .btn-send {
             padding: 14px 28px; font-size: 14px; font-weight: 700; font-family: inherit;
             letter-spacing: 2px; cursor: pointer; border: none;
-            background: var(--gold); color: #fff;
-            transition: all 0.25s ease; white-space: nowrap;
+            background: var(--gold); color: #fff; transition: all 0.25s ease; white-space: nowrap;
         }
         .btn-send:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
         .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .offline-banner {
-            text-align: center; padding: 8px 20px; font-size: 12px;
-            color: var(--danger); background: #FFF0EE;
-        }
-        .empty-chat {
-            text-align: center; padding: 64px 20px; color: var(--warm-gray);
-        }
+        .offline-banner { text-align: center; padding: 8px 20px; font-size: 12px; color: var(--danger); background: #FFF0EE; }
+        .empty-chat { text-align: center; padding: 64px 20px; color: var(--warm-gray); }
         .empty-chat .big-icon { font-size: 52px; margin-bottom: 16px; }
 
-        /* ====== Tab 2: 筛选浏览 ====== */
+        /* ====== 筛选浏览 ====== */
         .filter-bar {
             display: flex; flex-wrap: wrap; gap: 12px;
-            max-width: 1040px; margin: 0 auto; padding: 28px 40px 8px;
-            align-items: flex-end;
+            max-width: 1040px; margin: 0 auto; padding: 28px 40px 8px; align-items: flex-end;
         }
         .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
-        .filter-label {
-            font-size: 10px; letter-spacing: 2px; color: var(--warm-gray);
-            text-transform: uppercase; padding-left: 2px;
-        }
+        .filter-label { font-size: 10px; letter-spacing: 2px; color: var(--warm-gray); text-transform: uppercase; padding-left: 2px; }
         .filter-select, .filter-input {
             padding: 11px 12px; font-size: 13px;
             background: var(--white); border: 1px solid var(--border);
-            color: var(--ink); outline: none; font-family: inherit;
-            transition: all 0.25s ease;
+            color: var(--ink); outline: none; font-family: inherit; transition: all 0.25s ease;
         }
         .filter-select {
             appearance: none; -webkit-appearance: none;
@@ -244,40 +293,28 @@
             clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
         }
         .btn-search:hover { background: var(--ink); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(26,26,46,0.2); }
-        .btn-reset {
-            background: transparent; color: var(--warm-gray); border: 1px solid var(--border);
-        }
+        .btn-reset { background: transparent; color: var(--warm-gray); border: 1px solid var(--border); }
         .btn-reset:hover { border-color: var(--ink); color: var(--ink); }
 
         .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 20px;
-            max-width: 1040px; margin: 0 auto; padding: 8px 40px 56px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 20px; max-width: 1040px; margin: 0 auto; padding: 8px 40px 56px;
         }
         .shoe-card {
             background: var(--white); padding: 0 0 20px 0;
             position: relative; overflow: hidden;
             border-left: 4px solid var(--border);
             transition: all 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
-            animation: cardReveal 0.5s ease both;
-            display: flex; flex-direction: column;
+            animation: cardReveal 0.5s ease both; display: flex; flex-direction: column;
         }
-        .card-img {
-            width: 100%; height: 140px; object-fit: cover;
-            display: block; margin-bottom: 16px;
-        }
+        .card-img { width: 100%; height: 140px; object-fit: cover; display: block; margin-bottom: 16px; }
         .card-img-placeholder {
-            width: 100%; height: 140px;
-            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 140px; display: flex; align-items: center; justify-content: center;
             margin-bottom: 16px; position: relative; overflow: hidden;
         }
         .card-img-placeholder::before {
             content: ''; position: absolute; inset: 0; opacity: 0.35;
-            background: repeating-linear-gradient(
-                45deg, transparent, transparent 6px,
-                rgba(255,255,255,0.15) 6px, rgba(255,255,255,0.15) 12px
-            );
+            background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,255,255,0.15) 6px, rgba(255,255,255,0.15) 12px);
         }
         .card-img-placeholder .brand-letter {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
@@ -287,15 +324,13 @@
         }
         .card-body { padding: 0 20px; }
         .shoe-card:hover {
-            transform: translateY(-6px);
-            border-left-color: var(--gold);
+            transform: translateY(-6px); border-left-color: var(--gold);
             box-shadow: 0 14px 36px rgba(26,26,46,0.09), 0 0 0 1px rgba(245,133,31,0.06);
         }
         .shoe-card::after {
             content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
             background: linear-gradient(90deg, var(--gold), var(--gold-light));
-            transform: scaleX(0); transform-origin: left;
-            transition: transform 0.35s ease;
+            transform: scaleX(0); transform-origin: left; transition: transform 0.35s ease;
         }
         .shoe-card:hover::after { transform: scaleX(1); }
         @keyframes cardReveal {
@@ -318,9 +353,7 @@
             padding: 3px 10px; background: #FFF7ED;
         }
         .card-title { font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-        .card-meta {
-            font-size: 12px; color: var(--warm-gray); margin-bottom: 8px; letter-spacing: 0.5px;
-        }
+        .card-meta { font-size: 12px; color: var(--warm-gray); margin-bottom: 8px; letter-spacing: 0.5px; }
         .card-desc { font-size: 12px; color: #B8AD9E; line-height: 1.6; margin-bottom: 16px; }
         .card-footer { display: flex; align-items: center; justify-content: space-between; }
         .card-price {
@@ -332,14 +365,20 @@
         .stock-ok { color: var(--success); background: #EDF7F0; }
         .stock-no { color: var(--danger); background: #FFF0EE; }
 
-        .empty-state {
-            text-align: center; padding: 80px 40px; color: var(--warm-gray);
-        }
+        .empty-state { text-align: center; padding: 80px 40px; color: var(--warm-gray); }
         .empty-state .empty-num {
             font-family: "Arial Black", "Impact", "PingFang SC", sans-serif;
-            font-size: 80px; font-weight: 900; color: #E8DFD3; line-height: 1;
-            margin-bottom: 12px;
+            font-size: 80px; font-weight: 900; color: #E8DFD3; line-height: 1; margin-bottom: 12px;
         }
+
+        /* 收藏按钮 */
+        .btn-fav {
+            background: none; border: none; cursor: pointer; font-size: 18px;
+            padding: 4px 8px; transition: transform 0.2s ease; border-radius: 4px;
+            color: var(--warm-gray); line-height: 1;
+        }
+        .btn-fav:hover { transform: scale(1.2); }
+        .btn-fav.faved { color: var(--danger); }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--cream); }
@@ -366,19 +405,60 @@
 </head>
 <body>
 
-<!-- ===== 导航栏 ===== -->
-<nav class="nav-bar">
-    <div class="nav-logo">
-        <div class="nav-logo-dot"></div>AI鞋类导购
-    </div>
-    <div class="nav-right">
-        <span v-if="user" class="nav-user">{{ user.username }}</span>
-        <button @click="logout" class="btn-out">退出</button>
-    </div>
-</nav>
-
 <div id="app">
-    <!-- ===== Hero ===== -->
+    <!-- ====== 顶部导航栏 ====== -->
+    <nav class="nav-bar">
+        <div class="nav-logo">
+            <div class="nav-logo-dot"></div>AI鞋类导购
+        </div>
+        <div class="nav-right">
+            <button @click="goProfile" style="background:none;border:none;cursor:pointer;padding:0;">
+                <div style="width:34px;height:34px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Impact,sans-serif;font-size:16px;font-weight:900;" :title="user ? user.username : ''">
+                    {{ user ? user.username.charAt(0).toUpperCase() : '?' }}
+                </div>
+            </button>
+            <button @click="logout" class="btn-out">退出</button>
+        </div>
+    </nav>
+
+    <!-- ====== 滑动侧边栏 ====== -->
+    <div class="sidebar-wrap">
+        <div class="sidebar-trigger"></div>
+        <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-dot"></div>AI鞋类导购
+        </div>
+
+        <div class="sidebar-user" @click="goProfile" title="个人中心">
+            <div class="user-avatar">{{ user ? user.username.charAt(0).toUpperCase() : '?' }}</div>
+            <div class="user-info">
+                <div class="user-name">{{ user ? user.username : '未登录' }}</div>
+                <div class="user-role">{{ user && user.role === 'admin' ? '管理员' : '用户' }}</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button :class="'nav-item' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">
+                <span class="nav-icon">🤖</span>AI 智能导购
+            </button>
+            <button :class="'nav-item' + (tab === 'browse' ? ' active' : '')" @click="tab = 'browse'">
+                <span class="nav-icon">🔍</span>全部鞋款
+            </button>
+            <button class="nav-item" @click="goProfile">
+                <span class="nav-icon">👤</span>个人中心
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <button class="nav-item" @click="logout">
+                <span class="nav-icon">↩</span>退出登录
+            </button>
+        </div>
+    </aside>
+    </div>  <!-- /sidebar-wrap -->
+
+    <!-- ====== 主内容区 ====== -->
+    <!-- Hero -->
     <div class="hero">
         <div class="hero-left">
             <h1>每一步 <em>都精彩</em></h1>
@@ -391,26 +471,17 @@
         </div>
     </div>
 
-    <!-- ===== Tab 切换 ===== -->
+    <!-- Tab 切换 -->
     <div class="tab-bar">
-        <button :class="'tab-btn' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">
-            🤖 AI 智能导购
-        </button>
-        <button :class="'tab-btn' + (tab === 'browse' ? ' active' : '')" @click="tab = 'browse'">
-            🔍 全部鞋款
-        </button>
+        <button :class="'tab-btn' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">🤖 AI 智能导购</button>
+        <button :class="'tab-btn' + (tab === 'browse' ? ' active' : '')" @click="tab = 'browse'">🔍 全部鞋款</button>
     </div>
 
-    <!-- ================================ -->
-    <!--  Tab 1: AI 对话                   -->
-    <!-- ================================ -->
+    <!-- Tab 1: AI 对话 -->
     <div :class="'tab-content' + (tab === 'ai' ? ' active' : '')">
-        <div v-if="!aiOnline" class="offline-banner">
-            AI 助手暂时离线，请切换到「全部鞋款」使用传统筛选
-        </div>
+        <div v-if="!aiOnline" class="offline-banner">AI 助手暂时离线，请切换到「全部鞋款」使用传统筛选</div>
 
         <div class="chat-wrapper">
-            <!-- 消息区 -->
             <div class="chat-messages" ref="msgContainer">
                 <div v-if="chatMessages.length === 0" class="empty-chat">
                     <div class="big-icon">👟</div>
@@ -418,8 +489,7 @@
                     <div style="font-size:13px;">告诉我你的需求，比如"跑步穿的缓震鞋，预算500以内"</div>
                 </div>
 
-                <div v-for="(msg, i) in chatMessages" :key="i"
-                     :class="'msg-row ' + msg.role">
+                <div v-for="(msg, i) in chatMessages" :key="i" :class="'msg-row ' + msg.role">
                     <div class="msg-avatar">{{ msg.role === 'ai' ? '🤖' : '👤' }}</div>
                     <div class="msg-bubble">
                         <div v-html="msg.content"></div>
@@ -449,7 +519,6 @@
                 </div>
             </div>
 
-            <!-- 快捷按钮 -->
             <div class="quick-actions">
                 <button class="btn-quick" @click="quickSend('专业跑步鞋，我需要缓震好的，预算400左右')" :disabled="chatLoading">👟 专业跑步</button>
                 <button class="btn-quick" @click="quickSend('日常通勤穿的休闲鞋，要舒服百搭')" :disabled="chatLoading">🚶 日常通勤</button>
@@ -457,23 +526,16 @@
                 <button class="btn-quick" @click="quickSend('帮我推荐一双鞋')" :disabled="chatLoading">🔍 帮我推荐</button>
             </div>
 
-            <!-- 输入栏 -->
             <div class="chat-input-bar">
-                <input class="chat-input"
-                       v-model="inputText"
-                       @keyup.enter="sendMsg"
-                       :disabled="chatLoading"
-                       placeholder="输入你的需求，如：男生跑步宽脚预算400...">
+                <input class="chat-input" v-model="inputText" @keyup.enter="sendMsg"
+                       :disabled="chatLoading" placeholder="输入你的需求，如：男生跑步宽脚预算400...">
                 <button class="btn-send" @click="sendMsg" :disabled="chatLoading || !inputText.trim()">发送</button>
             </div>
         </div>
     </div>
 
-    <!-- ================================ -->
-    <!--  Tab 2: 筛选浏览                   -->
-    <!-- ================================ -->
+    <!-- Tab 2: 筛选浏览 -->
     <div :class="'tab-content' + (tab === 'browse' ? ' active' : '')">
-        <!-- 筛选栏 -->
         <div class="filter-bar">
             <div class="filter-group">
                 <span class="filter-label">性别</span>
@@ -510,7 +572,6 @@
             <button @click="resetFilter" class="btn-filter btn-reset">重置</button>
         </div>
 
-        <!-- 结果 -->
         <div v-if="filterMsg" class="empty-state">
             <div class="empty-num">00</div>
             <div class="empty-text">{{ filterMsg }}</div>
@@ -522,23 +583,28 @@
                     <span class="brand-letter">{{ p.brand.charAt(0) }}</span>
                 </div>
                 <div class="card-body">
-                <span class="card-brand">{{ p.brand }}</span>
-                <div class="card-title">{{ p.name }}</div>
-                <div class="card-meta">
-                    {{ p.category }}
-                    <span v-if="p.gender === 'male'">· 男款</span>
-                    <span v-else-if="p.gender === 'female'">· 女款</span>
-                    <span v-else>· 通用</span>
-                    <span v-if="p.color"> · {{ p.color }}</span>
-                    <span v-if="p.sizeRange"> · {{ p.sizeRange }}</span>
-                </div>
-                <div class="card-desc">{{ p.description }}</div>
-                <div class="card-footer">
-                    <span class="card-price">{{ p.price }}</span>
-                    <span :class="p.stock > 0 ? 'card-stock stock-ok' : 'card-stock stock-no'">
-                        {{ p.stock > 0 ? '有货' : '缺货' }}
-                    </span>
-                </div>
+                    <span class="card-brand">{{ p.brand }}</span>
+                    <div class="card-title">{{ p.name }}</div>
+                    <div class="card-meta">
+                        {{ p.category }}
+                        <span v-if="p.gender === 'male'">· 男款</span>
+                        <span v-else-if="p.gender === 'female'">· 女款</span>
+                        <span v-else>· 通用</span>
+                        <span v-if="p.color"> · {{ p.color }}</span>
+                        <span v-if="p.sizeRange"> · {{ p.sizeRange }}</span>
+                    </div>
+                    <div class="card-desc">{{ p.description }}</div>
+                    <div class="card-footer">
+                        <span class="card-price">{{ p.price }}</span>
+                        <div>
+                            <button :class="'btn-fav' + (isFaved(p.id) ? ' faved' : '')" @click="toggleFav(p.id)" :title="isFaved(p.id) ? '取消收藏' : '收藏'">
+                                {{ isFaved(p.id) ? '❤️' : '🤍' }}
+                            </button>
+                            <span :class="p.stock > 0 ? 'card-stock stock-ok' : 'card-stock stock-no'">
+                                {{ p.stock > 0 ? '有货' : '缺货' }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -554,20 +620,19 @@ createApp({
             user: null,
             tab: 'ai',
 
-            // AI 对话
             inputText: '',
             conversationId: null,
             chatMessages: [],
             chatLoading: false,
             aiOnline: true,
 
-            // 全部商品
             allProducts: [],
 
-            // 筛选
             fGender: '', fCategory: '', fBrand: '', fMinPrice: '', fMaxPrice: '',
             filteredProducts: [],
-            filterMsg: ''
+            filterMsg: '',
+
+            favIds: new Set()
         }
     },
     computed: {
@@ -583,12 +648,11 @@ createApp({
         const data = await res.json()
         if (data.code !== 200) { window.location.href = '/login.html'; return }
         this.user = data.data
-        await this.loadProducts()
+        await Promise.all([this.loadProducts(), this.loadFavorites()])
         this.filterProducts()
         this.checkAIHealth()
     },
     methods: {
-        // ====== 商品加载 ======
         async loadProducts() {
             try {
                 const r = await fetch('/api/products')
@@ -597,7 +661,29 @@ createApp({
             } catch(e) {}
         },
 
-        // ====== 传统筛选 ======
+        // ====== 收藏 ======
+        async loadFavorites() {
+            try {
+                const r = await fetch('/api/user/favorites')
+                const d = await r.json()
+                if (d.code === 200) {
+                    this.favIds = new Set(d.data.map(f => f.productId))
+                }
+            } catch(e) {}
+        },
+        isFaved(pid) { return this.favIds.has(pid) },
+        async toggleFav(pid) {
+            try {
+                if (this.favIds.has(pid)) {
+                    await fetch('/api/user/favorite/' + pid, { method: 'DELETE' })
+                    this.favIds.delete(pid)
+                } else {
+                    await fetch('/api/user/favorite/' + pid, { method: 'POST' })
+                    this.favIds.add(pid)
+                }
+            } catch(e) {}
+        },
+
         filterProducts() {
             let list = [...this.allProducts]
             if (this.fGender) list = list.filter(p => p.gender === this.fGender)
@@ -614,7 +700,6 @@ createApp({
             this.filterProducts()
         },
 
-        // ====== AI 对话 ======
         async checkAIHealth() {
             try {
                 const r = await fetch('/api/ai/health')
@@ -623,11 +708,8 @@ createApp({
             } catch(e) { this.aiOnline = false }
         },
         brandColor(name) {
-            // 用品牌名字符串哈希生成稳定颜色
             let hash = 0
-            for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash)
-            }
+            for (let i = 0; i < name.length; i++) { hash = name.charCodeAt(i) + ((hash << 5) - hash) }
             const h = Math.abs(hash) % 360
             return `hsl(${h}, 45%, 42%)`
         },
@@ -657,25 +739,19 @@ createApp({
                 const r = await fetch('/api/ai/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        conversation_id: this.conversationId,
-                        message: msg
-                    })
+                    body: JSON.stringify({ conversation_id: this.conversationId, message: msg })
                 })
                 const d = await r.json()
                 const resp = d.data
                 this.conversationId = resp.conversation_id
 
                 this.chatMessages.push({
-                    role: 'ai',
-                    content: this.fmtReply(resp.reply),
-                    action: resp.action,
-                    results: resp.results || []
+                    role: 'ai', content: this.fmtReply(resp.reply),
+                    action: resp.action, results: resp.results || []
                 })
             } catch(e) {
                 this.chatMessages.push({
-                    role: 'ai',
-                    content: '抱歉，AI 服务暂时不可用，请稍后再试。',
+                    role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后再试。',
                     action: 'chat', results: []
                 })
             } finally {
@@ -683,23 +759,19 @@ createApp({
                 this.$nextTick(() => this.scrollChat())
             }
         },
-        esc(text) {
-            const d = document.createElement('div')
-            d.textContent = text
-            return d.innerHTML
-        },
+        esc(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML },
         fmtReply(text) {
             let h = this.esc(text)
             h = h.replace(/\n/g, '<br>')
             h = h.replace(/```json[\s\S]*?```/g, '')
             return h
         },
-        scrollChat() {
-            const el = this.$refs.msgContainer
-            if (el) el.scrollTop = el.scrollHeight
-        },
+        scrollChat() { const el = this.$refs.msgContainer; if (el) el.scrollTop = el.scrollHeight },
+
+        goProfile() { window.location.href = '/profile.html' },
         async logout() {
-            await fetch('/api/user/logout', { method: 'POST' })
+            if (!confirm('确定要退出登录吗？')) return
+            try { await fetch('/api/user/logout', { method: 'POST' }) } catch(e) {}
             window.location.href = '/login.html'
         }
     }

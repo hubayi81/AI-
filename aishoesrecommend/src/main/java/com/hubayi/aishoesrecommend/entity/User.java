@@ -7,6 +7,7 @@ public class User {
     private Long id;
     private String username;
     private String password;     // 存的是 BCrypt 加密后的密文
+    private String role;         // user 或 admin
     private LocalDateTime createTime;
 
     public User() {}
@@ -19,6 +20,9 @@ public class User {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
