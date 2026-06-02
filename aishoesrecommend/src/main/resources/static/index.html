@@ -182,16 +182,6 @@
         .chat-messages::-webkit-scrollbar { width: 4px; }
         .chat-messages::-webkit-scrollbar-thumb { background: #D6CBB8; border-radius: 2px; }
 
-        .quick-actions { display: flex; gap: 10px; padding: 12px 0; flex-wrap: wrap; }
-        .btn-quick {
-            padding: 9px 20px; font-size: 13px; font-family: inherit;
-            background: var(--white); border: 1px solid var(--border);
-            color: var(--ink); cursor: pointer; letter-spacing: 1px;
-            transition: all 0.25s ease;
-        }
-        .btn-quick:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
-        .btn-quick:disabled { opacity: 0.5; cursor: not-allowed; }
-
         .msg-row { display: flex; gap: 12px; animation: msgIn 0.35s ease both; }
         .msg-row.user { flex-direction: row-reverse; }
         @keyframes msgIn {
@@ -232,6 +222,52 @@
         .rec-score { font-family: "Arial Black", "Impact", sans-serif; font-size: 20px; font-weight: 900; color: var(--ink); }
         .rec-score span { font-size: 11px; color: var(--warm-gray); }
         .rec-price { font-size: 12px; color: var(--gold); font-weight: 700; margin-top: 2px; }
+        /* 推荐卡片上的收藏按钮 */
+        .rec-card-fav {
+            background: none; border: none; cursor: pointer; font-size: 16px;
+            padding: 4px; transition: transform 0.2s; color: var(--warm-gray);
+        }
+        .rec-card-fav:hover { transform: scale(1.2); }
+        .rec-card-fav.faved { color: var(--danger); }
+        /* 推荐卡片展开详情 */
+        .rec-card { cursor: pointer; }
+        .rec-card-detail {
+            display: none; padding: 10px 0 0; font-size: 12px; color: var(--warm-gray);
+            border-top: 1px dashed var(--border); line-height: 1.8;
+        }
+        .rec-card-detail.show { display: block; }
+
+        /* 追问建议标签 */
+        .followup-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .followup-chip {
+            padding: 6px 14px; font-size: 12px; font-family: inherit;
+            background: #FFF7EF; border: 1px solid rgba(245,133,31,0.2);
+            color: var(--gold); cursor: pointer; border-radius: 16px;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .followup-chip:hover { background: var(--gold); color: #fff; }
+
+        /* 反馈按钮 */
+        .feedback-bar { display: flex; gap: 8px; margin-top: 10px; }
+        .feedback-btn {
+            background: none; border: 1px solid var(--border); cursor: pointer;
+            font-size: 13px; padding: 4px 12px; border-radius: 14px;
+            transition: all 0.2s; color: var(--warm-gray);
+        }
+        .feedback-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .feedback-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+        /* 工具调用状态 */
+        .chat-status {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: var(--gold); padding: 4px 0;
+        }
+        .chat-status::before {
+            content: ''; width: 12px; height: 12px; border: 2px solid var(--gold);
+            border-top-color: transparent; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .typing { display: flex; gap: 5px; padding: 8px 0; }
         .typing span { width: 7px; height: 7px; background: var(--warm-gray); border-radius: 50%; animation: bounce 1.2s infinite; }
@@ -380,6 +416,63 @@
         .btn-fav:hover { transform: scale(1.2); }
         .btn-fav.faved { color: var(--danger); }
 
+        /* ====== 管理按钮 ====== */
+        .btn-admin {
+            background: none; border: 1px solid var(--border); cursor: pointer;
+            font-size: 11px; padding: 3px 10px; font-family: inherit;
+            letter-spacing: 1px; transition: all 0.2s ease; border-radius: 3px;
+            color: var(--warm-gray); margin-left: 4px;
+        }
+        .btn-admin:hover { border-color: var(--ink); color: var(--ink); }
+        .btn-admin.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+        .btn-add-product {
+            position: fixed; bottom: 32px; right: 32px; z-index: 150;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: var(--gold); color: #fff; border: none;
+            font-size: 22px; cursor: pointer; font-weight: 700;
+            box-shadow: 0 6px 20px rgba(245,133,31,0.35);
+            transition: all 0.25s ease; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-add-product:hover { background: var(--ink); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(26,26,46,0.3); }
+
+        /* ====== 弹窗遮罩 ====== */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 500;
+            background: rgba(26,26,46,0.55); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-box {
+            background: var(--white); width: 480px; max-width: 90vw; max-height: 85vh;
+            overflow-y: auto; padding: 36px 32px 28px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(24px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-title { font-family: "Arial Black", "Impact", sans-serif; font-size: 20px; font-weight: 900; margin-bottom: 28px; }
+        .modal-field { margin-bottom: 18px; }
+        .modal-field label { display: block; font-size: 10px; letter-spacing: 2px; color: var(--warm-gray); text-transform: uppercase; margin-bottom: 6px; }
+        .modal-field input, .modal-field select, .modal-field textarea {
+            width: 100%; padding: 12px 14px; font-size: 14px; font-family: inherit;
+            border: 1px solid var(--border); color: var(--ink); outline: none;
+            background: #FAF9F6; transition: border-color 0.25s;
+        }
+        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--gold); }
+        .modal-field textarea { resize: vertical; min-height: 72px; }
+        .modal-btns { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; }
+        .modal-btns button {
+            padding: 11px 28px; font-size: 13px; font-weight: 700; font-family: inherit;
+            letter-spacing: 2px; cursor: pointer; border: none; transition: all 0.2s;
+        }
+        .btn-save { background: var(--gold); color: #fff; }
+        .btn-save:hover { background: var(--ink); }
+        .btn-cancel { background: transparent; color: var(--warm-gray); border: 1px solid var(--border); }
+        .btn-cancel:hover { border-color: var(--ink); color: var(--ink); }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--cream); }
         ::-webkit-scrollbar-thumb { background: #D6CBB8; border-radius: 3px; }
@@ -399,7 +492,6 @@
         }
         @media (max-width: 480px) {
             .product-grid { grid-template-columns: 1fr; }
-            .btn-quick { padding: 8px 14px; font-size: 12px; }
         }
     </style>
 </head>
@@ -494,19 +586,46 @@
                     <div class="msg-bubble">
                         <div v-html="msg.content"></div>
                         <div v-if="msg.results && msg.results.length > 0" class="rec-cards">
-                            <div v-for="(r, j) in msg.results" :key="j" class="rec-card">
+                            <div v-for="(r, j) in msg.results" :key="j" class="rec-card" @click.stop="r._expanded = !r._expanded">
                                 <img v-if="findImage(r)" :src="findImage(r)" :alt="r.name" class="rec-img">
                                 <div v-else class="rec-thumb" :style="{background: brandColor(r.name || '')}">{{ (r.name || '鞋').charAt(0) }}</div>
                                 <div class="rec-rank">{{ j + 1 }}</div>
                                 <div class="rec-info">
                                     <div class="rec-name">{{ r.name }}</div>
                                     <div class="rec-reason">{{ r.reason }}</div>
+                                    <!-- 点击展开的详情：显示更多商品信息 -->
+                                    <div :class="'rec-card-detail' + (r._expanded ? ' show' : '')" @click.stop>
+                                        <div v-if="findProduct(r.productId)">
+                                            <template v-if="findProduct(r.productId).description">📝 {{ findProduct(r.productId).description }}</template>
+                                            <template v-if="findProduct(r.productId).color"> · 颜色: {{ findProduct(r.productId).color }}</template>
+                                            <template v-if="findProduct(r.productId).sizeRange"> · 尺码: {{ findProduct(r.productId).sizeRange }}</template>
+                                            <template v-if="findProduct(r.productId).stock !== undefined"> · 库存: {{ findProduct(r.productId).stock }}件</template>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="rec-right">
                                     <div class="rec-score">{{ r.score }}<span> 分</span></div>
                                     <div class="rec-price" v-if="findPrice(r)">¥{{ findPrice(r) }}</div>
                                 </div>
+                                <!-- 收藏按钮：直接在推荐卡片上操作，不需要切到浏览 tab -->
+                                <button :class="'rec-card-fav' + (isFaved(r.productId) ? ' faved' : '')"
+                                        @click.stop="toggleFav(r.productId)"
+                                        :title="isFaved(r.productId) ? '取消收藏' : '收藏'">
+                                    {{ isFaved(r.productId) ? '❤️' : '🤍' }}
+                                </button>
                             </div>
+                        </div>
+                        <!-- 追问建议：AI 生成的后续问题，用户点击即发送 -->
+                        <div v-if="msg.followUps && msg.followUps.length > 0" class="followup-chips">
+                            <button v-for="(fu, fi) in msg.followUps" :key="fi" class="followup-chip"
+                                    @click="sendFollowup(fu)">{{ fu }}</button>
+                        </div>
+                        <!-- 👍👎 反馈按钮：收集用户对推荐质量的评价 -->
+                        <div v-if="msg.role === 'ai' && msg.results && msg.results.length > 0" class="feedback-bar">
+                            <button :class="'feedback-btn' + (msg._feedback === 'like' ? ' active' : '')"
+                                    @click="submitFeedback(msg, 'like')">👍 有帮助</button>
+                            <button :class="'feedback-btn' + (msg._feedback === 'dislike' ? ' active' : '')"
+                                    @click="submitFeedback(msg, 'dislike')">👎 不太准</button>
                         </div>
                     </div>
                 </div>
@@ -514,16 +633,11 @@
                 <div v-if="chatLoading" class="msg-row ai">
                     <div class="msg-avatar">🤖</div>
                     <div class="msg-bubble">
-                        <div class="typing"><span></span><span></span><span></span></div>
+                        <!-- 工具调用时显示"正在搜索…"状态，否则显示打字动画 -->
+                        <div v-if="chatStatus" class="chat-status">{{ chatStatus }}</div>
+                        <div v-else class="typing"><span></span><span></span><span></span></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="quick-actions">
-                <button class="btn-quick" @click="quickSend('专业跑步鞋，我需要缓震好的，预算400左右')" :disabled="chatLoading">👟 专业跑步</button>
-                <button class="btn-quick" @click="quickSend('日常通勤穿的休闲鞋，要舒服百搭')" :disabled="chatLoading">🚶 日常通勤</button>
-                <button class="btn-quick" @click="quickSend('男生，平时白T恤牛仔裤，帮我搭配一双鞋')" :disabled="chatLoading">👔 穿搭搭配</button>
-                <button class="btn-quick" @click="quickSend('帮我推荐一双鞋')" :disabled="chatLoading">🔍 帮我推荐</button>
             </div>
 
             <div class="chat-input-bar">
@@ -603,9 +717,77 @@
                             <span :class="p.stock > 0 ? 'card-stock stock-ok' : 'card-stock stock-no'">
                                 {{ p.stock > 0 ? '有货' : '缺货' }}
                             </span>
+                            <template v-if="isAdmin">
+                                <button class="btn-admin" @click="openEdit(p)">编辑</button>
+                                <button class="btn-admin danger" @click="deleteProduct(p)">删除</button>
+                            </template>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 管理员：浮动添加按钮 ====== -->
+    <button v-if="isAdmin" class="btn-add-product" @click="openAdd" title="新增鞋款">+</button>
+
+    <!-- ====== 管理员：新增/编辑弹窗 ====== -->
+    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+        <div class="modal-box">
+            <div class="modal-title">{{ editingId ? '编辑鞋款' : '新增鞋款' }}</div>
+            <div class="modal-field">
+                <label>鞋款名称</label>
+                <input v-model="form.name" placeholder="如 Air Zoom Pegasus">
+            </div>
+            <div class="modal-field">
+                <label>品牌</label>
+                <input v-model="form.brand" placeholder="如 Nike">
+            </div>
+            <div class="modal-field">
+                <label>品类</label>
+                <select v-model="form.category">
+                    <option value="">请选择</option>
+                    <option v-for="c in categories" :value="c">{{ c }}</option>
+                </select>
+            </div>
+            <div class="modal-field">
+                <label>性别</label>
+                <select v-model="form.gender">
+                    <option value="">不限</option>
+                    <option value="male">男款</option>
+                    <option value="female">女款</option>
+                    <option value="unisex">通用</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:14px;">
+                <div class="modal-field" style="flex:1;">
+                    <label>价格 (¥)</label>
+                    <input v-model.number="form.price" type="number" placeholder="399">
+                </div>
+                <div class="modal-field" style="flex:1;">
+                    <label>库存</label>
+                    <input v-model.number="form.stock" type="number" placeholder="100">
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>图片 URL</label>
+                <input v-model="form.imageUrl" placeholder="https://...">
+            </div>
+            <div class="modal-field">
+                <label>颜色</label>
+                <input v-model="form.color" placeholder="如 黑/白">
+            </div>
+            <div class="modal-field">
+                <label>尺码范围</label>
+                <input v-model="form.sizeRange" placeholder="如 36-45">
+            </div>
+            <div class="modal-field">
+                <label>描述</label>
+                <textarea v-model="form.description" placeholder="轻量缓震跑鞋，适合日常训练..."></textarea>
+            </div>
+            <div class="modal-btns">
+                <button class="btn-cancel" @click="showModal = false">取 消</button>
+                <button class="btn-save" @click="saveProduct" :disabled="saving">{{ saving ? '保存中...' : '保 存' }}</button>
             </div>
         </div>
     </div>
@@ -624,6 +806,7 @@ createApp({
             conversationId: null,
             chatMessages: [],
             chatLoading: false,
+            chatStatus: '',  // 工具调用状态文案，如"正在搜索…"，空字符串时不显示
             aiOnline: true,
 
             allProducts: [],
@@ -632,10 +815,17 @@ createApp({
             filteredProducts: [],
             filterMsg: '',
 
-            favIds: new Set()
+            favIds: new Set(),
+
+            // 管理员增删改
+            showModal: false,
+            editingId: null,
+            saving: false,
+            form: { name: '', brand: '', category: '', gender: '', price: 0, stock: 0, imageUrl: '', color: '', sizeRange: '', description: '' }
         }
     },
     computed: {
+        isAdmin() { return this.user && this.user.role === 'admin' },
         brands() {
             return [...new Set(this.allProducts.map(p => p.brand))].sort()
         },
@@ -721,58 +911,223 @@ createApp({
             const p = this.allProducts.find(x => x.id === result.productId)
             return p ? p.imageUrl : null
         },
-        quickSend(text) {
-            this.tab = 'ai'
-            this.inputText = text
-            this.$nextTick(() => this.sendMsg())
-        },
         async sendMsg() {
             const msg = this.inputText.trim()
             if (!msg || this.chatLoading) return
 
+            // 先显示用户消息
             this.chatMessages.push({ role: 'user', content: this.esc(msg) })
             this.inputText = ''
             this.chatLoading = true
+            this.chatStatus = ''  // 清除上次残留状态
             this.$nextTick(() => this.scrollChat())
 
             try {
-                const r = await fetch('/api/ai/chat', {
+                // 发起 SSE 流式请求
+                const r = await fetch('/api/ai/chat/stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ conversation_id: this.conversationId, message: msg })
                 })
-                const d = await r.json()
-                const resp = d.data
-                this.conversationId = resp.conversation_id
+                if (!r.ok) throw new Error('SSE 连接失败')
 
-                this.chatMessages.push({
-                    role: 'ai', content: this.fmtReply(resp.reply),
-                    action: resp.action, results: resp.results || []
-                })
+                // 读取流：逐行解析 SSE data
+                const reader = r.body.getReader()
+                const decoder = new TextDecoder()
+                let buffer = '' // 缓冲区：拼接不完整的行
+
+                // 插入占位 AI 消息，后续逐 token 往里面拼
+                const aiIdx = this.chatMessages.push({
+                    role: 'ai', content: '',
+                    action: 'chat', results: [], followUps: []
+                }) - 1
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    buffer += decoder.decode(value, { stream: true })
+                    const lines = buffer.split('\n')
+                    buffer = lines.pop() || ''  // 最后一个可能不完整，留着
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue
+                        const payload = line.slice(6)
+                        try {
+                            const d = JSON.parse(payload)
+                            if (d.token) {
+                                this.chatMessages[aiIdx].content += this.fmtToken(d.token)
+                                this.$nextTick(() => this.scrollChat())
+                            } else if (d.status !== undefined) {
+                                // 工具调用状态：Python 端工具开始/结束时的通知
+                                this.chatStatus = d.status
+                                this.$nextTick(() => this.scrollChat())
+                            } else if (d.done) {
+                                // 流结束，写入终版内容 + followUps
+                                this.conversationId = d.conversation_id
+                                this.chatMessages[aiIdx].content = this.cleanMarkdown(d.reply)
+                                this.chatMessages[aiIdx].action = d.action
+                                this.chatMessages[aiIdx].results = d.results || []
+                                this.chatMessages[aiIdx].followUps = d.followUps || []
+                                // 保存到 AI 对话历史
+                                this.saveChatHistory(msg, d.reply)
+                            }
+                        } catch (_) { /* 忽略 JSON 解析异常 */ }
+                    }
+                }
             } catch(e) {
-                this.chatMessages.push({
-                    role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后再试。',
-                    action: 'chat', results: []
-                })
+                // SSE 失败时降级为非流式请求
+                try {
+                    const r2 = await fetch('/api/ai/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ conversation_id: this.conversationId, message: msg })
+                    })
+                    const d2 = await r2.json()
+                    const resp = d2.data
+                    this.conversationId = resp.conversation_id
+                    this.chatMessages.push({
+                        role: 'ai', content: this.cleanMarkdown(resp.reply),
+                        action: resp.action, results: resp.results || [],
+                        followUps: resp.followUps || []
+                    })
+                    // 保存到 AI 对话历史（降级路径）
+                    this.saveChatHistory(msg, resp.reply)
+                } catch(_) {
+                    this.chatMessages.push({
+                        role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后再试。',
+                        action: 'chat', results: [], followUps: []
+                    })
+                }
             } finally {
                 this.chatLoading = false
+                this.chatStatus = ''  // 清除工具调用状态
                 this.$nextTick(() => this.scrollChat())
             }
         },
-        esc(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML },
-        fmtReply(text) {
-            let h = this.esc(text)
+        /** 根据 productId 查完整商品信息（用于推荐卡片展开详情） */
+        findProduct(pid) {
+            return this.allProducts.find(p => p.id === pid) || null
+        },
+        /** 点击追问标签 → 自动填入输入框并发送 */
+        sendFollowup(text) {
+            this.inputText = text
+            this.$nextTick(() => this.sendMsg())
+        },
+        /** 提交 AI 推荐反馈（👍/👎） */
+        async submitFeedback(msg, type) {
+            if (msg._feedback === type) return  // 重复点击同一按钮，不处理
+            msg._feedback = type
+            // 找到前一条用户消息作为提问
+            const idx = this.chatMessages.indexOf(msg)
+            const prev = idx > 0 ? this.chatMessages[idx - 1] : null
+            fetch('/api/user/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    conversation_id: this.conversationId || '',
+                    user_message: prev && prev.role === 'user' ? prev.content : '',
+                    ai_reply: msg.content || '',
+                    feedback: type
+                })
+            }).catch(() => {})  // 静默，不影响主流程
+        },
+        esc(text) {
+            // 防 XSS：纯文本转义
+            const d = document.createElement('div'); d.textContent = text; return d.innerHTML
+        },
+        fmtToken(text) {
+            // 流式 token 实时转义并换行
+            return this.esc(text).replace(/\n/g, '<br>')
+        },
+        cleanMarkdown(raw) {
+            // 清洗 AI 回复中的 markdown 格式和装饰符号
+            let h = this.esc(raw)
             h = h.replace(/\n/g, '<br>')
+            // 去掉 ```json ... ``` 代码块（JSON 数据不需要展示）
             h = h.replace(/```json[\s\S]*?```/g, '')
+            // 去掉 markdown 标题前缀（## / ### 等）
+            h = h.replace(/^#{1,6}\s*/gm, '')
+            // 去掉加粗标记 **text**
+            h = h.replace(/\*\*(.*?)\*\*/g, '$1')
+            // 去掉成对的星号（斜体）
+            h = h.replace(/\*(.*?)\*/g, '$1')
+            // 去掉 emoji 数字序号（1️⃣2️⃣3️⃣）
+            h = h.replace(/[0-9]️⃣/g, '')
+            // 去掉表情装饰符号
+            h = h.replace(/[⭐✨\u{1F525}\u{1F44D}\u{1F4AF}✅\u{1F31F}\u{1F389}\u{1F4A5}\u{1F308}\u{1F48E}]/gu, '')
             return h
         },
         scrollChat() { const el = this.$refs.msgContainer; if (el) el.scrollTop = el.scrollHeight },
+
+        // 保存 AI 对话历史到后端（静默，不影响用户体验）
+        saveChatHistory(userMsg, aiReply) {
+            fetch('/api/user/ai-history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    conversation_id: this.conversationId || '',
+                    user_message: userMsg,
+                    ai_reply: aiReply
+                })
+            }).catch(() => {}) // 失败静默，不影响主流程
+        },
 
         goProfile() { window.location.href = '/profile.html' },
         async logout() {
             if (!confirm('确定要退出登录吗？')) return
             try { await fetch('/api/user/logout', { method: 'POST' }) } catch(e) {}
             window.location.href = '/login.html'
+        },
+
+        // ====== 管理员 CRUD ======
+        resetForm() {
+            this.form = { name: '', brand: '', category: '', gender: '', price: 0, stock: 0, imageUrl: '', color: '', sizeRange: '', description: '' }
+            this.editingId = null
+        },
+        openAdd() {
+            this.resetForm()
+            this.showModal = true
+        },
+        openEdit(p) {
+            this.editingId = p.id
+            this.form = { name: p.name, brand: p.brand, category: p.category, gender: p.gender, price: p.price, stock: p.stock, imageUrl: p.imageUrl || '', color: p.color || '', sizeRange: p.sizeRange || '', description: p.description || '' }
+            this.showModal = true
+        },
+        async saveProduct() {
+            if (!this.form.name || !this.form.brand) return alert('请至少填写名称和品牌')
+            this.saving = true
+            try {
+                const method = this.editingId ? 'PUT' : 'POST'
+                const url = this.editingId ? '/api/admin/products/' + this.editingId : '/api/admin/products'
+                const r = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.form)
+                })
+                const d = await r.json()
+                if (d.code === 200) {
+                    this.showModal = false
+                    await this.loadProducts()
+                    this.filterProducts()
+                } else {
+                    alert(d.message || '操作失败')
+                }
+            } catch(e) { alert('网络异常') }
+            finally { this.saving = false }
+        },
+        async deleteProduct(p) {
+            if (!confirm('确定删除「' + p.name + '」？此操作不可撤销。')) return
+            try {
+                const r = await fetch('/api/admin/products/' + p.id, { method: 'DELETE' })
+                const d = await r.json()
+                if (d.code === 200) {
+                    await this.loadProducts()
+                    this.filterProducts()
+                } else {
+                    alert(d.message || '删除失败')
+                }
+            } catch(e) { alert('网络异常') }
         }
     }
 }).mount('#app')

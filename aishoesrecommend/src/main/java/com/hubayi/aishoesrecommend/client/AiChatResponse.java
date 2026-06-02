@@ -12,6 +12,10 @@ public class AiChatResponse {
     private String action;
     private List<RecommendResult> results;
 
+    // AI 生成的追问建议（如"有更便宜的吗？"），前端渲染为可点击标签
+    // 用户点一下就能继续对话，不需要自己打字
+    private List<String> followUps;
+
     public AiChatResponse() {}
 
     // ---- getter / setter ----
@@ -26,6 +30,9 @@ public class AiChatResponse {
 
     public List<RecommendResult> getResults() { return results; }
     public void setResults(List<RecommendResult> results) { this.results = results; }
+
+    public List<String> getFollowUps() { return followUps; }
+    public void setFollowUps(List<String> followUps) { this.followUps = followUps; }
 
     // ---- 内部类：推荐结果 ----
     public static class RecommendResult {

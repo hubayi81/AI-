@@ -31,4 +31,19 @@ public class ShoeProductService {
                                        BigDecimal minPrice, BigDecimal maxPrice) {
         return dao.findByPreferences(gender, category, brand, minPrice, maxPrice);
     }
+
+    // ===== 管理员 CRUD =====
+    public ShoeProduct addProduct(ShoeProduct p) {
+        dao.insert(p);
+        return p;
+    }
+
+    public ShoeProduct updateProduct(ShoeProduct p) {
+        dao.update(p);
+        return p;
+    }
+
+    public void deleteProduct(Long id) {
+        dao.deleteById(id);
+    }
 }

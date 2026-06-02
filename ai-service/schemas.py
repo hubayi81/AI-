@@ -6,7 +6,9 @@ class Product(BaseModel):
     name:str
     brand:str
     category:str
+    gender:str = ""          # male / female / unisex
     price:float
+    imageUrl:str = ""        # 商品图片 URL
     description:str = ""
     color:str = ""
     sizeRange:str = ""
@@ -17,6 +19,8 @@ class ChatRequest(BaseModel):
     conversation_id:str | None = None
     message:str
     products:list[Product] = []
+    # 用户画像上下文（Java 端根据收藏/历史计算后传入，可为空）
+    user_context:str = ""
 
 class RecommendResult(BaseModel):
     """推荐结果里的每一项"""
@@ -26,8 +30,10 @@ class RecommendResult(BaseModel):
     reason:str
 
 class ChatResponse(BaseModel):
-    """返回给前端的响应"""
+    """返回给前端的响应（非流式）"""
     conversation_id:str
     reply:str
     action:str = "chat"
     results:list[RecommendResult] | None = None
+    # 追问建议：AI 生成的后续问题，前端渲染为可点击标签
+    followUps:list[str] | None = None

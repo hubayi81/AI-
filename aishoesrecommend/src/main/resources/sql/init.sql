@@ -39,3 +39,49 @@ CREATE TABLE shoe_product (
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
   SELECT * FROM user
   
+  
+  
+ALTER TABLE `user` ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user' AFTER password;
+
+-- 给已有的用户设角色（把你自己设成管理员）
+UPDATE `user` SET role = 'admin' WHERE username = '你的用户名';
+
+-- 验证
+SELECT id, username, role FROM `user`;
+
+-- 给已有的用户设角色（把admin设成管理员）
+UPDATE `user` SET role = 'admin' WHERE username = 'admin';
+-- 验证
+SELECT id, username, role FROM `user`;
+
+
+-- 收藏表
+CREATE TABLE favorite (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_product (user_id, product_id)
+);
+
+-- AI 对话历史表
+CREATE TABLE ai_chat_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    conversation_id VARCHAR(50),
+    role VARCHAR(20) NOT NULL,
+    content TEXT,
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 用户对 AI 推荐的反馈表
+CREATE TABLE ai_feedback (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    conversation_id VARCHAR(50),
+    user_message TEXT COMMENT '用户当时的提问',
+    ai_reply TEXT COMMENT 'AI 的回复',
+    feedback VARCHAR(10) NOT NULL COMMENT 'like 或 dislike',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_conv (user_id, conversation_id)
+);

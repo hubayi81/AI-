@@ -63,4 +63,26 @@ public class ShoeProductDao {
 
         return jdbc.query(sql.toString(), new BeanPropertyRowMapper<>(ShoeProduct.class), params.toArray());
     }
+
+    // ===== 管理员 CRUD =====
+
+    // 新增商品
+    public int insert(ShoeProduct p) {
+        String sql = "INSERT INTO shoe_product(name, brand, gender, category, price, image_url, stock, description, color, size_range) VALUES (?,?,?,?,?,?,?,?,?,?)";
+        return jdbc.update(sql, p.getName(), p.getBrand(), p.getGender(), p.getCategory(),
+                p.getPrice(), p.getImageUrl(), p.getStock(), p.getDescription(), p.getColor(), p.getSizeRange());
+    }
+
+    // 更新商品
+    public int update(ShoeProduct p) {
+        String sql = "UPDATE shoe_product SET name=?, brand=?, gender=?, category=?, price=?, image_url=?, stock=?, description=?, color=?, size_range=? WHERE id=?";
+        return jdbc.update(sql, p.getName(), p.getBrand(), p.getGender(), p.getCategory(),
+                p.getPrice(), p.getImageUrl(), p.getStock(), p.getDescription(), p.getColor(), p.getSizeRange(), p.getId());
+    }
+
+    // 删除商品
+    public int deleteById(Long id) {
+        String sql = "DELETE FROM shoe_product WHERE id=?";
+        return jdbc.update(sql, id);
+    }
 }
