@@ -1,2 +1,32 @@
 # IDE（根目录）
 .idea/
+*.iml
+
+# 环境变量 & 本地配置
+.env
+.env.local
+application-local.yml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Java
+target/
+*.class
+*.jar
+!src/main/resources/static/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 面试准备文档（个人笔记）
+面试准备-*.md
+
+# AI 服务追踪数据
+traces.db
