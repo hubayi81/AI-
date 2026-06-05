@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>可观测性看板 — AI鞋类导购</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --ink: #1A1A2E; --cream: #FBF8F3; --gold: #F5851F; --gold-light: #FFB347;
+    --white: #FFF; --warm-gray: #91887A; --border: #E8E0D3;
+    --success: #3C9D70; --danger: #E0554A; --info: #4A90D9;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: var(--cream);
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
+    color: var(--ink); min-height: 100vh;
+    background-image: radial-gradient(ellipse at 60% 0%, rgba(245,133,31,0.04) 0%, transparent 50%);
+}
+
+/* ===== 顶栏 ===== */
+.nav-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(26,26,46,0.88); backdrop-filter: blur(20px) saturate(180%);
+    padding: 0 40px; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.nav-logo {
+    font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+    font-size: 18px; font-weight: 900; color: var(--white); letter-spacing: 2px;
+    display: flex; align-items: center; gap: 10px;
+}
+.nav-logo-dot {
+    width: 8px; height: 8px; background: var(--gold);
+    animation: dotPulse 1.5s ease-in-out infinite; border-radius: 50%;
+}
+@keyframes dotPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.8);opacity:.4} }
+.nav-right { display: flex; align-items: center; gap: 20px; }
+.nav-right a {
+    color: rgba(255,255,255,0.5); text-decoration: none; font-size: 13px;
+    letter-spacing: 1px; transition: color 0.2s;
+}
+.nav-right a:hover { color: var(--white); }
+
+/* ===== 主容器 ===== */
+.container { max-width: 1200px; margin: 0 auto; padding: 32px 40px; }
+
+/* ===== 筛选行 ===== */
+.toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-bottom: 28px; flex-wrap: wrap;
+}
+.toolbar h1 {
+    font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+    font-size: 26px; font-weight: 900; letter-spacing: -1px;
+}
+.toolbar h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.day-btns { display: flex; gap: 6px; }
+.day-btn {
+    padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--white); font-size: 13px; cursor: pointer; font-family: inherit;
+    transition: all 0.25s var(--ease-out-expo); color: var(--warm-gray);
+}
+.day-btn:hover { border-color: var(--gold); color: var(--ink); }
+.day-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+.loading-text { font-size: 13px; color: var(--warm-gray); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ===== 概览卡片 ===== */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.card {
+    background: var(--white); border-radius: 14px; padding: 20px 24px;
+    box-shadow: 0 2px 12px rgba(44,36,22,0.04); position: relative; overflow: hidden;
+}
+.card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+    border-radius: 4px 0 0 4px;
+}
+.card.card-req::before { background: var(--info); }
+.card.card-lat::before { background: var(--gold); }
+.card.card-tok::before { background: var(--success); }
+.card.card-err::before { background: var(--danger); }
+.card.card-cost::before { background: #9B59B6; }
+.card-label { font-size: 11px; letter-spacing: 2px; color: var(--warm-gray); text-transform: uppercase; margin-bottom: 6px; }
+.card-value {
+    font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+    font-size: 28px; font-weight: 900; line-height: 1.2;
+}
+.card-sub { font-size: 12px; color: var(--warm-gray); margin-top: 2px; }
+
+/* ===== 图表区 ===== */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+@media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+.chart-box {
+    background: var(--white); border-radius: 14px; padding: 20px 24px;
+    box-shadow: 0 2px 12px rgba(44,36,22,0.04);
+}
+.chart-box.full { grid-column: 1 / -1; }
+.chart-title {
+    font-size: 14px; font-weight: 700; margin-bottom: 16px;
+    letter-spacing: 1px; color: var(--ink);
+}
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap canvas { width: 100% !important; }
+
+/* ===== 延迟分位数横条 ===== */
+.pct-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.pct-item {
+    flex: 1; min-width: 120px; background: rgba(26,26,46,0.03); border-radius: 10px;
+    padding: 16px; text-align: center;
+}
+.pct-label { font-size: 11px; letter-spacing: 2px; color: var(--warm-gray); margin-bottom: 4px; }
+.pct-value {
+    font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+    font-size: 22px; font-weight: 900;
+}
+
+/* ===== 最近记录表格 ===== */
+.trace-table-wrap { overflow-x: auto; }
+.trace-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.trace-table th {
+    text-align: left; padding: 10px 12px; font-size: 11px; letter-spacing: 2px;
+    color: var(--warm-gray); border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+.trace-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+}
+.trace-table tr:hover { background: rgba(245,133,31,0.03); }
+.trace-table .err-row { background: rgba(224,85,74,0.04); }
+.trace-table .err-row:hover { background: rgba(224,85,74,0.08); }
+.trace-tool-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+    background: rgba(245,133,31,0.1); color: var(--gold); margin: 1px 2px;
+}
+
+/* 入场动画 */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.container > * { animation: fadeUp 0.5s var(--ease-out-expo) both; }
+.container > *:nth-child(1) { animation-delay: 0s; }
+.container > *:nth-child(2) { animation-delay: 0.08s; }
+.container > *:nth-child(3) { animation-delay: 0.16s; }
+.container > *:nth-child(4) { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+    <div class="nav-logo"><div class="nav-logo-dot"></div>AI鞋类导购 · 可观测性看板</div>
+    <div class="nav-right">
+        <a href="/index.html">← 返回首页</a>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 筛选行 -->
+    <div class="toolbar">
+        <h1>Agent <em>追踪</em></h1>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div class="day-btns">
+                <button v-for="d in dayOptions" :key="d.value"
+                        :class="'day-btn' + (days === d.value ? ' active' : '')"
+                        @click="days = d.value; refresh()">{{ d.label }}</button>
+            </div>
+            <span v-if="loading" class="loading-text">加载中…</span>
+        </div>
+    </div>
+
+    <!-- 概览卡片 -->
+    <div class="cards">
+        <div class="card card-req">
+            <div class="card-label">总请求数</div>
+            <div class="card-value">{{ overview.total_requests || 0 }}</div>
+            <div class="card-sub">{{ days }} 天内</div>
+        </div>
+        <div class="card card-lat">
+            <div class="card-label">平均延迟</div>
+            <div class="card-value">{{ fmtMs(overview.avg_duration_ms) }}</div>
+            <div class="card-sub">首 Token {{ fmtMs(overview.avg_first_token_ms) }}</div>
+        </div>
+        <div class="card card-tok">
+            <div class="card-label">Token 消耗</div>
+            <div class="card-value">{{ fmtK(overview.total_tokens_in + overview.total_tokens_out) }}</div>
+            <div class="card-sub">输入 {{ fmtK(overview.total_tokens_in) }} / 输出 {{ fmtK(overview.total_tokens_out) }}</div>
+        </div>
+        <div class="card card-err">
+            <div class="card-label">错误率</div>
+            <div class="card-value">{{ overview.error_rate || 0 }}<span style="font-size:16px;">%</span></div>
+            <div class="card-sub" :style="{color: (overview.error_rate||0) > 5 ? 'var(--danger)' : 'var(--warm-gray)'}">
+                {{ (overview.error_rate||0) > 5 ? '⚠ 需要关注' : '正常范围' }}
+            </div>
+        </div>
+        <div class="card card-cost">
+            <div class="card-label">预估费用</div>
+            <div class="card-value">¥{{ overview.estimated_cost_rmb || 0 }}</div>
+            <div class="card-sub">DeepSeek 官方定价估算</div>
+        </div>
+    </div>
+
+    <!-- 图表区 -->
+    <div class="charts-grid">
+        <!-- 每小时请求量（柱状图） -->
+        <div class="chart-box">
+            <div class="chart-title">📊 每小时请求量</div>
+            <div class="chart-wrap"><canvas id="chartHourly"></canvas></div>
+        </div>
+        <!-- 工具调用分布（横向柱状图） -->
+        <div class="chart-box">
+            <div class="chart-title">🔧 工具调用分布</div>
+            <div class="chart-wrap"><canvas id="chartTools"></canvas></div>
+        </div>
+        <!-- 每日 Token 趋势（折线图） -->
+        <div class="chart-box full">
+            <div class="chart-title">📈 每日 Token 消耗趋势</div>
+            <div class="chart-wrap"><canvas id="chartTokens"></canvas></div>
+        </div>
+    </div>
+
+    <!-- 延迟分位数 -->
+    <div class="chart-box" style="margin-bottom:28px;">
+        <div class="chart-title">⏱ 延迟分位数</div>
+        <div class="pct-row">
+            <div class="pct-item">
+                <div class="pct-label">P50（中位数）</div>
+                <div class="pct-value" style="color:var(--success);">{{ fmtMs(latency.p50_ms) }}</div>
+            </div>
+            <div class="pct-item">
+                <div class="pct-label">P95</div>
+                <div class="pct-value" style="color:var(--gold);">{{ fmtMs(latency.p95_ms) }}</div>
+            </div>
+            <div class="pct-item">
+                <div class="pct-label">P99</div>
+                <div class="pct-value" style="color:var(--danger);">{{ fmtMs(latency.p99_ms) }}</div>
+            </div>
+        </div>
+        <div style="font-size:11px;color:var(--warm-gray);margin-top:8px;">
+            P50 = 半数请求快于此值，P95 = 95% 请求快于此值，P99 = 慢请求的上限
+        </div>
+    </div>
+
+    <!-- 最近 Trace 记录 -->
+    <div class="chart-box">
+        <div class="chart-title">📋 最近 Trace 记录（{{ recentTraces.length }} 条）</div>
+        <div class="trace-table-wrap">
+            <table class="trace-table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>Trace ID</th>
+                        <th>总耗时</th>
+                        <th>首 Token</th>
+                        <th>工具调用</th>
+                        <th>Token</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="t in recentTraces" :key="t.trace_id" :class="t.error ? 'err-row' : ''">
+                        <td>{{ shortTime(t.timestamp) }}</td>
+                        <td style="font-family:monospace;font-size:11px;">{{ t.trace_id }}</td>
+                        <td>{{ fmtMs(t.duration_ms) }}</td>
+                        <td>{{ t.first_token_ms ? fmtMs(t.first_token_ms) : '-' }}</td>
+                        <!-- 工具调用标签 -->
+                        <td>
+                            <span v-for="tc in (t.tool_calls||[])" :key="tc.name" class="trace-tool-tag">
+                                {{ tc.name }} {{ fmtMs(tc.duration_ms) }}
+                            </span>
+                            <span v-if="!(t.tool_calls||[]).length" style="color:var(--warm-gray)">—</span>
+                        </td>
+                        <td>{{ t.tokens_input }}+{{ t.tokens_output }}</td>
+                        <td :style="{color: t.error ? 'var(--danger)' : 'var(--success)'}">
+                            {{ t.error ? '❌ 失败' : '✅ 成功' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue
+
+// Python stats API 地址（看板页面直接调 Python，不经过 Java）
+const API_BASE = 'http://127.0.0.1:5000'
+
+createApp({
+    data() {
+        return {
+            days: 7,
+            loading: false,
+            dayOptions: [
+                { label: '今天', value: 1 },
+                { label: '3 天', value: 3 },
+                { label: '7 天', value: 7 },
+                { label: '14 天', value: 14 },
+                { label: '30 天', value: 30 },
+            ],
+            overview: {},
+            latency: { p50_ms: 0, p95_ms: 0, p99_ms: 0 },
+            hourly: [],
+            tools: [],
+            daily_tokens: [],
+            recentTraces: [],
+            // Chart.js 实例（需要手动管理以支持更新）
+            chartHourly: null, chartTools: null, chartTokens: null,
+        }
+    },
+    async mounted() {
+        await this.refresh()
+    },
+    methods: {
+        async refresh() {
+            this.loading = true
+            try {
+                const [statsRes, recentRes] = await Promise.all([
+                    fetch(`${API_BASE}/admin/stats?days=${this.days}`),
+                    fetch(`${API_BASE}/admin/stats/recent?limit=50`),
+                ])
+                const stats = await statsRes.json()
+                const recent = await recentRes.json()
+
+                this.overview = stats.overview || {}
+                this.latency = stats.latency || {}
+                this.hourly = stats.hourly || []
+                this.tools = stats.tools || []
+                this.daily_tokens = stats.daily_tokens || []
+                this.recentTraces = recent.traces || []
+
+                // 等 Vue 渲染完 DOM 后再画图表
+                this.$nextTick(() => {
+                    this.renderHourlyChart()
+                    this.renderToolsChart()
+                    this.renderTokensChart()
+                })
+            } catch (e) {
+                console.error('加载统计数据失败:', e)
+            } finally {
+                this.loading = false
+            }
+        },
+
+        // —— 每小时请求量柱状图 ——
+        renderHourlyChart() {
+            const labels = this.hourly.map(h => {
+                const d = new Date(h.hour + ':00');  // 解析 ISO
+                return d.getHours() + ':00'
+            })
+            const data = this.hourly.map(h => h.count)
+            this._renderOrUpdate('chartHourly', () => ({
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '请求数', data,
+                        backgroundColor: 'rgba(245,133,31,0.6)',
+                        borderColor: 'rgba(245,133,31,1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0ebe0' } },
+                        x: { grid: { display: false } },
+                    }
+                }
+            }))
+        },
+
+        // —— 工具调用分布横向柱状图 ——
+        renderToolsChart() {
+            const labels = this.tools.map(t => t.name)
+            const data = this.tools.map(t => t.count)
+            this._renderOrUpdate('chartTools', () => ({
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '调用次数', data,
+                        backgroundColor: [
+                            'rgba(245,133,31,0.7)', 'rgba(74,144,217,0.7)',
+                            'rgba(60,157,112,0.7)', 'rgba(155,89,182,0.7)',
+                            'rgba(224,85,74,0.7)',
+                        ],
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0ebe0' } },
+                        y: { grid: { display: false } },
+                    }
+                }
+            }))
+        },
+
+        // —— 每日 Token 趋势折线图 ——
+        renderTokensChart() {
+            const labels = this.daily_tokens.map(d => d.day.slice(5))  // MM-DD
+            const dataIn = this.daily_tokens.map(d => d.tokens_in)
+            const dataOut = this.daily_tokens.map(d => d.tokens_out)
+            this._renderOrUpdate('chartTokens', () => ({
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: '输入 Token', data: dataIn,
+                            borderColor: 'rgba(74,144,217,1)',
+                            backgroundColor: 'rgba(74,144,217,0.05)',
+                            fill: true, tension: 0.3, pointRadius: 3,
+                        },
+                        {
+                            label: '输出 Token', data: dataOut,
+                            borderColor: 'rgba(245,133,31,1)',
+                            backgroundColor: 'rgba(245,133,31,0.05)',
+                            fill: true, tension: 0.3, pointRadius: 3,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f0ebe0' } },
+                        x: { grid: { display: false } },
+                    }
+                }
+            }))
+        },
+
+        // Chart.js 辅助：创建或更新图表
+        _renderOrUpdate(canvasId, createConfigFn) {
+            const canvas = document.getElementById(canvasId)
+            if (!canvas) return
+            const ctx = canvas.getContext('2d')
+
+            // 销毁旧图表
+            if (this[canvasId]) {
+                this[canvasId].destroy()
+                this[canvasId] = null
+            }
+
+            this[canvasId] = new Chart(ctx, createConfigFn())
+        },
+
+        // —— 格式化工具 ——
+        fmtMs(v) {
+            if (!v && v !== 0) return '-'
+            const n = Number(v)
+            if (n < 1000) return Math.round(n) + ' ms'
+            if (n < 60000) return (n / 1000).toFixed(1) + ' s'
+            return (n / 60000).toFixed(1) + ' min'
+        },
+        fmtK(v) {
+            if (!v) return '0'
+            const n = Number(v)
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+            return String(n)
+        },
+        shortTime(iso) {
+            if (!iso) return '-'
+            const d = new Date(iso)
+            const now = new Date()
+            const pad = n => String(n).padStart(2, '0')
+            const time = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds())
+            if (d.toDateString() === now.toDateString()) return time
+            return (d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + time
+        },
+    },
+}).mount('.container')
+</script>
+</body>
+</html>

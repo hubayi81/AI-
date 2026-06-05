@@ -17,6 +17,7 @@
             --glass-border: rgba(255,255,255,0.55);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        [v-cloak] { display: none; }
         body {
             background: var(--cream);
             font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", -apple-system, sans-serif;
@@ -109,6 +110,55 @@
         .sidebar-bottom { padding: 0 14px; margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
         .sidebar-bottom .nav-item { color: rgba(255,255,255,0.35); }
         .sidebar-bottom .nav-item:hover { color: var(--danger); }
+
+        /* ===== 对话列表（侧边栏内） ===== */
+        .conv-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+        .conv-section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 14px 10px;
+        }
+        .conv-section-title {
+            font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 2px; text-transform: uppercase;
+        }
+        .conv-new-btn {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s var(--ease-out-expo);
+            font-family: inherit; line-height: 1; padding: 0;
+        }
+        .conv-new-btn:hover { background: rgba(245,133,31,0.18); border-color: var(--gold); color: var(--gold-light); }
+        .conv-list { flex: 1; overflow-y: auto; padding: 0 8px; min-height: 0; }
+        .conv-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 8px; margin-bottom: 2px; border-radius: 8px;
+            cursor: pointer; transition: all 0.25s var(--ease-out-expo);
+            position: relative; border: none; background: transparent;
+            width: 100%; text-align: left; font-family: inherit;
+        }
+        .conv-item:hover { background: rgba(255,255,255,0.05); }
+        .conv-item.active { background: rgba(245,133,31,0.12); box-shadow: inset 0 0 0 1px rgba(245,133,31,0.15); }
+        .conv-item-body { flex: 1; min-width: 0; }
+        .conv-item-preview {
+            font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.4;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: color 0.2s;
+        }
+        .conv-item.active .conv-item-preview { color: rgba(255,255,255,0.92); }
+        .conv-item-time {
+            font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 2px;
+        }
+        .conv-item-del {
+            width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+            background: transparent; border: none; color: rgba(255,255,255,0.2);
+            font-size: 13px; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; opacity: 0; transition: all 0.2s;
+            font-family: inherit; line-height: 1; padding: 0;
+        }
+        .conv-item:hover .conv-item-del { opacity: 1; }
+        .conv-item-del:hover { background: rgba(224,85,74,0.2); color: var(--danger); }
+        .conv-empty { text-align: center; padding: 24px 12px; font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
 
         /* ===== Hero（极简轻奢） ===== */
         .hero {
@@ -501,7 +551,7 @@
 </head>
 <body>
 
-<div id="app">
+<div id="app" v-cloak>
     <!-- 顶栏 -->
     <nav class="nav-bar">
         <div class="nav-logo"><div class="nav-logo-dot"></div>AI鞋类导购</div>
@@ -527,7 +577,27 @@
                 <div class="user-role">{{ user && user.role === 'admin' ? '管理员' : '用户' }}</div>
             </div>
         </div>
-        <nav class="sidebar-nav">
+        <!-- 对话列表 —— 像 ChatGPT 左侧栏，支持多轮对话管理 -->
+        <div class="conv-section">
+            <div class="conv-section-header">
+                <span class="conv-section-title">对话记录</span>
+                <button class="conv-new-btn" @click="newConversation" title="新建对话">+</button>
+            </div>
+            <div class="conv-list">
+                <div v-if="conversations.length === 0" class="conv-empty">暂无对话，开始聊天吧</div>
+                <button v-for="conv in conversations" :key="conv.conversationId"
+                        :class="'conv-item' + (currentConversationId === conv.conversationId ? ' active' : '')"
+                        @click="switchConversation(conv.conversationId)">
+                    <div class="conv-item-body">
+                        <div class="conv-item-preview">{{ conv.preview || '新对话' }}</div>
+                        <div class="conv-item-time">{{ formatTime(conv.updateTime) }}</div>
+                    </div>
+                    <button class="conv-item-del" @click.stop="deleteConversation(conv.conversationId)" title="删除对话">×</button>
+                </button>
+            </div>
+        </div>
+        <!-- 导航（底栏上方） -->
+        <nav class="sidebar-nav" style="flex:none;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px;">
             <button :class="'nav-item' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">
                 <span class="nav-icon">🤖</span>AI 智能导购
             </button>
@@ -537,6 +607,9 @@
             <button class="nav-item" @click="goProfile">
                 <span class="nav-icon">👤</span>个人中心
             </button>
+            <a v-if="isAdmin" class="nav-item" href="/admin/stats.html" style="text-decoration:none;">
+                <span class="nav-icon">📊</span>可观测性看板
+            </a>
         </nav>
         <div class="sidebar-bottom">
             <button class="nav-item" @click="logout"><span class="nav-icon">↩</span>退出登录</button>
@@ -757,6 +830,9 @@ createApp({
             user: null, tab: 'ai',
             inputText: '', conversationId: null,
             chatMessages: [], chatLoading: false, chatStatus: '', aiOnline: true,
+            // 对话列表管理
+            conversations: [],           // 左侧对话列表
+            currentConversationId: null,  // 当前活跃对话 ID（持久化到 localStorage）
             allProducts: [],
             fGender: '', fCategory: '', fBrand: '', fMinPrice: '', fMaxPrice: '',
             filteredProducts: [], filterMsg: '',
@@ -779,10 +855,76 @@ createApp({
         await Promise.all([this.loadProducts(), this.loadFavorites()])
         this.filterProducts()
         this.checkAIHealth()
-        // 3. 数字滚动动画（在数据加载完后执行）
+        // 3. 从 localStorage 恢复当前对话 ID（刷新页面后继续之前的对话）
+        this.currentConversationId = localStorage.getItem('shoe_current_conv') || this.generateConvId()
+        this.conversationId = this.currentConversationId
+        // 4. 加载对话列表 + 当前对话的历史消息
+        await this.loadConversations()
+        if (this.currentConversationId) {
+            await this.loadConversationMessages(this.currentConversationId)
+        }
+        // 5. 数字滚动动画（在数据加载完后执行）
         this.$nextTick(() => this.animateNumbers())
     },
     methods: {
+        // ===== 对话管理 =====
+        // 生成唯一对话 ID：时间戳 + 随机数，避免碰撞
+        generateConvId() { return 'conv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6) },
+        // 格式化时间：今天显示"10:30"，非今天显示"06-04"
+        formatTime(t) { if (!t) return ''; const d = new Date(t); const now = new Date(); return d.toDateString() === now.toDateString() ? d.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}) : (d.getMonth()+1)+'-'+String(d.getDate()).padStart(2,'0') },
+        // 从后端加载对话列表
+        async loadConversations() {
+            try {
+                const r = await fetch('/api/user/conversations'); const d = await r.json()
+                if (d.code === 200) this.conversations = d.data || []
+            } catch (_) { this.conversations = [] }
+        },
+        // 新建对话：生成新 ID，清空聊天，存 localStorage，刷新列表
+        newConversation() {
+            this.currentConversationId = this.generateConvId()
+            this.conversationId = this.currentConversationId
+            localStorage.setItem('shoe_current_conv', this.currentConversationId)
+            this.chatMessages = []
+            this.chatStatus = ''
+            this.loadConversations()
+        },
+        // 切换到已有对话：加载该对话的历史消息
+        async switchConversation(convId) {
+            if (this.currentConversationId === convId) return
+            this.currentConversationId = convId
+            this.conversationId = convId
+            localStorage.setItem('shoe_current_conv', convId)
+            this.chatMessages = []
+            this.chatStatus = ''
+            await this.loadConversationMessages(convId)
+        },
+        // 加载指定对话的历史消息到聊天界面
+        async loadConversationMessages(convId) {
+            try {
+                const r = await fetch('/api/user/conversation/' + encodeURIComponent(convId))
+                const d = await r.json()
+                if (d.code === 200 && d.data) {
+                    this.chatMessages = d.data.map(m => ({
+                        role: m.role === 'user' ? 'user' : 'ai',
+                        content: m.role === 'ai' ? this.cleanMarkdown(m.content) : this.esc(m.content),
+                        action: 'chat', results: [], followUps: []
+                    }))
+                    this.$nextTick(() => this.scrollChat())
+                }
+            } catch (_) {}
+        },
+        // 删除对话：确认后从后端删除，从列表移除，如果是当前对话则切到新对话
+        async deleteConversation(convId) {
+            if (!confirm('确定删除这个对话吗？')) return
+            try {
+                await fetch('/api/user/conversation/' + encodeURIComponent(convId), { method: 'DELETE' })
+            } catch (_) {}
+            this.conversations = this.conversations.filter(c => c.conversationId !== convId)
+            if (this.currentConversationId === convId) {
+                this.newConversation()
+            }
+        },
+
         // ===== 数字滚动动画 =====
         animateNumbers() {
             const targets = [
@@ -869,6 +1011,8 @@ createApp({
             const msg = this.inputText.trim(); if (!msg||this.chatLoading) return
             this.chatMessages.push({role:'user',content:this.esc(msg)})
             this.inputText=''; this.chatLoading=true; this.chatStatus=''; this.$nextTick(()=>this.scrollChat())
+            // 确保 conversationId 已初始化
+            if (!this.conversationId) { this.conversationId = this.currentConversationId || this.generateConvId(); this.currentConversationId = this.conversationId }
             try {
                 const r = await fetch('/api/ai/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
                 if (!r.ok) throw new Error('SSE fail')
@@ -885,6 +1029,8 @@ createApp({
                             else if (d.status!==undefined) { this.chatStatus = d.status; this.$nextTick(()=>this.scrollChat()) }
                             else if (d.done) {
                                 this.conversationId = d.conversation_id
+                                this.currentConversationId = d.conversation_id
+                                localStorage.setItem('shoe_current_conv', d.conversation_id)
                                 this.chatMessages[aiIdx].content = this.cleanMarkdown(d.reply)
                                 this.chatMessages[aiIdx].action = d.action
                                 this.chatMessages[aiIdx].results = d.results||[]
@@ -898,10 +1044,16 @@ createApp({
                 try {
                     const r2 = await fetch('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
                     const d2 = await r2.json(); const resp = d2.data; this.conversationId = resp.conversation_id
+                    this.currentConversationId = resp.conversation_id
+                    localStorage.setItem('shoe_current_conv', resp.conversation_id)
                     this.chatMessages.push({role:'ai',content:this.cleanMarkdown(resp.reply),action:resp.action,results:resp.results||[],followUps:resp.followUps||[]})
                     this.saveChatHistory(msg, resp.reply)
                 } catch(_) { this.chatMessages.push({role:'ai',content:'抱歉，AI 服务暂时不可用，请稍后再试。',action:'chat',results:[],followUps:[]}) }
-            } finally { this.chatLoading=false; this.chatStatus=''; this.$nextTick(()=>this.scrollChat()) }
+            } finally {
+                this.chatLoading=false; this.chatStatus=''; this.$nextTick(()=>this.scrollChat())
+                // 每次对话后刷新对话列表（更新预览和时间）
+                this.loadConversations()
+            }
         },
         findProduct(pid) { return this.allProducts.find(p=>p.id===pid)||null },
         sendFollowup(text) { this.inputText = text; this.$nextTick(()=>this.sendMsg()) },

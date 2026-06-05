@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人中心 - AI鞋类导购</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <style>
         /* ===== Design Tokens（与 index.html 统一） ===== */
         :root {
@@ -15,6 +15,8 @@
             --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Vue 挂载前隐藏模板语法——避免用户看到 {{ }} 和两个 tab 同时出现的闪烁 */
+        [v-cloak] { display: none; }
         body {
             font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
             background: var(--bg);
@@ -304,7 +306,13 @@ createApp({
             return groups
         }
     },
-    async mounted() { await this.checkLogin(); if (this.user) this.loadFavorites() },
+    async mounted() {
+        await this.checkLogin();
+        if (this.user) {
+            // 收藏接口已 JOIN 商品表，一个请求直接拿到完整数据，不再需要 preloadProducts
+            this.loadFavorites()
+        }
+    },
     methods: {
         async checkLogin() {
             try { const r=await fetch('/api/user/status'); const d=await r.json()
@@ -312,17 +320,13 @@ createApp({
             } catch(e) { window.location.href='/login.html' }
         },
         async loadFavorites() {
-            this.loading=true
+            this.loading = true
             try {
-                const r=await fetch('/api/user/favorites'); const d=await r.json()
-                if (d.code!==200) { this.loading=false; return }
-                const favs = d.data
-                if (favs.length===0) { this.favList=[]; this.loading=false; return }
-                const r2=await fetch('/api/products'); const d2=await r2.json()
-                const allProducts = d2.code===200 ? d2.data : []
-                const productMap = {}; allProducts.forEach(p=>{productMap[p.id]=p})
-                this.favList = favs.map(f=>{const p=productMap[f.productId]||{}; return {...f,...p}})
-            } catch(e) {} finally { this.loading=false }
+                const r = await fetch('/api/user/favorites'); const d = await r.json()
+                if (d.code !== 200) return
+                // 后端已 JOIN 商品表，直接拿到 name/price/image/brand，不再需要调 /api/products
+                this.favList = d.data || []
+            } catch(e) {} finally { this.loading = false }
         },
         async removeFav(productId) {
             try { await fetch('/api/user/favorite/'+productId,{method:'DELETE'})

@@ -34,10 +34,12 @@ public class AiAgentClient {
     /**
      * 发送对话请求给 Python Agent（非流式，保留兼容）
      * @param userContext 用户画像（收藏偏好等），可为空
+     * @param history 对话历史（role + content 列表），用于恢复 Agent 记忆
      */
     public AiChatResponse chat(String conversationId, String message,
                                List<Map<String, Object>> products,
-                               String userContext) {
+                               String userContext,
+                               List<Map<String, String>> history) {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("conversation_id", conversationId);
@@ -45,6 +47,8 @@ public class AiAgentClient {
             body.put("products", products);
             // 用户画像传给 Python，使推荐更个性化（如收藏的鞋品牌/品类）
             body.put("user_context", userContext != null ? userContext : "");
+            // 对话历史传给 Python 用于恢复记忆（Python 重启后也能接上）
+            body.put("history", history != null ? history : List.of());
 
             return rest.postForObject(AGENT_URL, body, AiChatResponse.class);
 
@@ -62,10 +66,12 @@ public class AiAgentClient {
      * SSE 流式对话 —— 透传 Python 的 SSE 流到前端。
      * 用原生 HttpURLConnection 实现，因为 RestTemplate 会等完整响应才返回，不适合流式转发。
      * @param userContext 用户画像（收藏偏好等），可为空
+     * @param history 对话历史（role + content 列表），用于恢复 Agent 记忆
      */
     public void chatStream(String conversationId, String message,
                            List<Map<String, Object>> products,
                            String userContext,
+                           List<Map<String, String>> history,
                            HttpServletResponse response) {
         HttpURLConnection conn = null;
         try {
@@ -76,6 +82,17 @@ public class AiAgentClient {
             json.append(",\"message\":\"").append(escapeJson(message)).append("\"");
             // 用户画像 —— 让 AI 了解用户偏好
             json.append(",\"user_context\":\"").append(escapeJson(userContext != null ? userContext : "")).append("\"");
+            // 对话历史 —— Python 重启后从此恢复记忆，保证对话连续性
+            json.append(",\"history\":[");
+            if (history != null) {
+                for (int i = 0; i < history.size(); i++) {
+                    if (i > 0) json.append(",");
+                    Map<String, String> msg = history.get(i);
+                    json.append("{\"role\":\"").append(escapeJson(msg.get("role"))).append("\"");
+                    json.append(",\"content\":\"").append(escapeJson(msg.get("content"))).append("\"}");
+                }
+            }
+            json.append("]");
             json.append(",\"products\":[");
             for (int i = 0; i < products.size(); i++) {
                 if (i > 0) json.append(",");

@@ -3,10 +3,11 @@ import json
 from langchain.tools import tool
 
 
-def create_tools(products: list[dict], retriever=None):
+def create_tools(products: list[dict], retriever=None, knowledge_base=None):
     """
-    工厂函数：接收本次请求的商品列表 + 语义检索器，
-    返回四个工具函数（商品数据通过闭包注入，不用全局变量）
+    工厂函数：接收本次请求的商品列表 + 语义检索器 + 知识库，
+    返回工具函数列表（数据通过闭包注入，不用全局变量）
+    knowledge_base 为 None 时（知识库未加载），search_knowledge 工具不会返回
     """
 
     def _apply_filters(items: list[dict], **kwargs) -> list[dict]:
@@ -119,4 +120,28 @@ def create_tools(products: list[dict], retriever=None):
         question: 追问的具体问题"""
         return json.dumps({"question": question}, ensure_ascii=False)
 
-    return [search_products, analyze_outfit, compare_shoes, ask_clarify]
+    # —— search_knowledge 只在知识库可用时才返回 ——
+    # 为什么用条件判断？—— 知识库可能因为文件缺失而加载失败，
+    # 此时不暴露该工具给 Agent，避免 Agent 调用后得到空结果
+    tool_list = [search_products, analyze_outfit, compare_shoes, ask_clarify]
+
+    if knowledge_base is not None:
+        @tool
+        def search_knowledge(query: str) -> str:
+            """在鞋类专业知识库中搜索。当用户问"为什么""怎么选""什么材质""怎么保养"
+            "适合什么脚型""某品牌有什么特点"等专业问题时，先调这个工具获取专业知识。
+            参数：
+            query: 搜索关键词，如"扁平足怎么选跑鞋""EVA和Boost的区别""篮球鞋怎么保养" """
+            chunks = knowledge_base.search(query, top_k=3)
+            if not chunks:
+                return json.dumps({"message": "未找到相关知识"}, ensure_ascii=False)
+            # 返回时附带来源文件名，Agent 回复时可以引用
+            result = {"knowledge": [
+                {"content": c["text"], "source": c["source"], "heading": c["heading"]}
+                for c in chunks
+            ]}
+            return json.dumps(result, ensure_ascii=False)
+
+        tool_list.append(search_knowledge)
+
+    return tool_list

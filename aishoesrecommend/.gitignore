@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 环境变量 ###
+.env
+application-local.yml

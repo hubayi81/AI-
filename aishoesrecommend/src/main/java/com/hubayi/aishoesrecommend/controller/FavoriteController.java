@@ -1,8 +1,10 @@
 package com.hubayi.aishoesrecommend.controller;
 
 import com.hubayi.aishoesrecommend.common.Result;
-import com.hubayi.aishoesrecommend.entity.Favorite;
 import com.hubayi.aishoesrecommend.entity.User;
+
+import java.util.List;
+import java.util.Map;
 import com.hubayi.aishoesrecommend.service.FavoriteService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
@@ -28,12 +30,17 @@ public class FavoriteController {
         return (User) session.getAttribute("user");
     }
 
-    /** 获取我的收藏列表 */
+    /**
+     * 获取我的收藏列表（含商品信息：name/price/image/brand）。
+     * 为什么用 JOIN 返回完整商品数据而不是只返回 productId？
+     * —— 前端个人中心如果只拿到 productId，需要再调 /api/products 拉全量几百条商品来补信息，
+     * 网络往返 × 数据量让页面加载很慢。JOIN 后一次返回，加载速度从秒级降到毫秒级。
+     */
     @GetMapping("/favorites")
-    public Result<List<Favorite>> list(HttpSession session) {
+    public Result<List<Map<String, Object>>> list(HttpSession session) {
         User user = currentUser(session);
         if (user == null) return Result.error(401, "请先登录");
-        List<Favorite> list = service.getFavorites(user.getId());
+        List<Map<String, Object>> list = service.getFavoritesWithProduct(user.getId());
         return Result.success(list);
     }
 

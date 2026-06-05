@@ -8,6 +8,25 @@ from langchain_core.messages import HumanMessage, AIMessage
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
 from retriever import ShoeRetriever
 from tools import create_tools
+from knowledge_base import KnowledgeBase
+from trace import TraceContext
+
+# 知识库：启动时加载一次，常驻内存，所有请求共享
+# 为什么用全局变量？—— 知识库的 markdown 文件不会在运行时变化，
+# 每次请求重新加载会浪费 I/O + 向量化计算
+_knowledge_base = None
+
+
+def _get_knowledge_base() -> KnowledgeBase | None:
+    """懒加载知识库，加载失败时返回 None（Agent 降级运行，不影响商品搜索）"""
+    global _knowledge_base
+    if _knowledge_base is None:
+        try:
+            _knowledge_base = KnowledgeBase()
+        except Exception as e:
+            print(f"[Agent] 知识库加载失败: {e}")
+            _knowledge_base = False  # 标记为已尝试，避免反复重试
+    return _knowledge_base if _knowledge_base is not False else None
 
 # ===== 1. LLM 客户端 =====
 llm = ChatOpenAI(
@@ -35,7 +54,8 @@ SYSTEM_PROMPT_TEMPLATE = """你是 AI 鞋类导购助手。你必须主动使用
 2. 用户描述穿搭 → 立即调 analyze_outfit
 3. 用户要求对比 → 立即调 compare_shoes
 4. 信息不够时 → 调 ask_clarify 追问，问完继续搜
-5. 最终推荐时，必须在回复末尾输出 JSON，用 ```json 代码块包裹：
+5. 用户问专业知识（材质对比/足型选鞋/运动场景/品牌特点/尺码/保养）→ 先调 search_knowledge 获取专业知识，再结合商品推荐。为什么先查知识？—— 有专业依据的推荐比"我觉得这双好"可信得多
+6. 最终推荐时，必须在回复末尾输出 JSON，用 ```json 代码块包裹：
 
 ```json
 {{
@@ -98,33 +118,68 @@ def _trim_history(history: list, max_rounds: int = 10):
         history.pop(0)
 
 
+def _restore_history(target_list: list, history_data: list[dict]):
+    """从持久化历史恢复对话记忆（Agent 启动后第一次对话时调用）。
+    为什么不是每次都覆盖？—— 只追加重放最近的消息，避免改变已有消息的引用。
+    取最近 10 轮（20 条），和 _trim_history 策略一致。"""
+    for msg in history_data[-20:]:
+        role = msg.get("role", "")
+        content = msg.get("content", "")
+        if role == "user":
+            target_list.append(HumanMessage(content=content))
+        elif role in ("ai", "assistant"):
+            target_list.append(AIMessage(content=content))
+
+
 # 工具名 → 中文状态文案（前端显示用）
 TOOL_STATUS_MAP = {
     "search_products": "正在为你搜索合适的鞋款…",
     "analyze_outfit": "正在分析穿搭风格…",
     "compare_shoes": "正在对比两双鞋的优劣…",
     "ask_clarify": "想再确认一下你的需求…",
+    "search_knowledge": "正在查阅专业知识…",
     "_default": "正在思考…",
 }
 
 
 # ===== 4. 核心：处理用户消息（非流式）=====
 def process_message(conversation_id: str | None, user_message: str,
-                    products: list[dict], user_context: str = "") -> dict:
-    history, conversation_id = _get_history(conversation_id)
+                    products: list[dict], user_context: str = "",
+                    history: list[dict] | None = None) -> dict:
+    # —— 追踪：开始计时 ——
+    trace_ctx = TraceContext(conversation_id=conversation_id or "")
+    trace_ctx.start()
+    error_msg = None
+
+    history_list, conversation_id = _get_history(conversation_id)
+    # Python 内存中没有这个对话的历史 → 从传入的持久化历史恢复
+    # 场景：Python 服务刚重启，内存字典清空了，但 MySQL 里有记录
+    if len(history_list) == 0 and history:
+        _restore_history(history_list, history)
     retriever = ShoeRetriever(products)
-    tools = create_tools(products, retriever)
+    tools = create_tools(products, retriever, _get_knowledge_base())
     system_prompt = _build_system_prompt(user_context)
     agent = create_agent(llm, tools, system_prompt=system_prompt)
 
-    messages = history + [HumanMessage(content=user_message)]
-    result = agent.invoke({"messages": messages})
+    messages = history_list + [HumanMessage(content=user_message)]
 
-    output = result["messages"][-1].content
+    try:
+        result = agent.invoke({"messages": messages})
+        output = result["messages"][-1].content
+    except Exception as e:
+        output = "AI 暂时不可用，请稍后再试。"
+        error_msg = str(e)
 
-    history.append(HumanMessage(content=user_message))
-    history.append(AIMessage(content=output))
-    _trim_history(history)
+    # —— 追踪：结束计时，保存 ——
+    # 非流式没有 first_token 时间，估算 token
+    input_text = user_message + system_prompt
+    tokens_in = TraceContext.estimate_tokens(input_text)
+    tokens_out = TraceContext.estimate_tokens(output)
+    trace_ctx.end(error=error_msg, tokens_input=tokens_in, tokens_output=tokens_out)
+
+    history_list.append(HumanMessage(content=user_message))
+    history_list.append(AIMessage(content=output))
+    _trim_history(history_list)
 
     reply, action, results, follow_ups = _parse_reply(output)
 
@@ -139,16 +194,26 @@ def process_message(conversation_id: str | None, user_message: str,
 
 # ===== 5. 流式处理（SSE 用）=====
 async def stream_agent(conversation_id: str | None, user_message: str,
-                       products: list[dict], user_context: str = ""):
+                       products: list[dict], user_context: str = "",
+                       history: list[dict] | None = None):
     """异步生成器，逐 token yield SSE 事件。
     额外 yield on_tool_start 事件让前端展示"正在搜索…"状态。"""
-    history, conversation_id = _get_history(conversation_id)
+    # —— 追踪：开始计时 ——
+    trace_ctx = TraceContext(conversation_id=conversation_id or "")
+    trace_ctx.start()
+    error_msg = None
+    first_token_seen = False
+
+    history_list, conversation_id = _get_history(conversation_id)
+    # Python 内存中没有这个对话的历史 → 从传入的持久化历史恢复
+    if len(history_list) == 0 and history:
+        _restore_history(history_list, history)
     retriever = ShoeRetriever(products)
-    tools = create_tools(products, retriever)
+    tools = create_tools(products, retriever, _get_knowledge_base())
     system_prompt = _build_system_prompt(user_context)
     agent = create_agent(streaming_llm, tools, system_prompt=system_prompt)
 
-    input_messages = history + [HumanMessage(content=user_message)]
+    input_messages = history_list + [HumanMessage(content=user_message)]
     full_text = ""
 
     try:
@@ -158,33 +223,45 @@ async def stream_agent(conversation_id: str | None, user_message: str,
         ):
             kind = event.get("event", "")
 
-            # 工具开始执行 → 通知前端显示状态
+            # 工具开始执行 → 通知前端 + 追踪计时
             if kind == "on_tool_start":
                 tool_name = event.get("name", "")
+                trace_ctx.on_tool_start(tool_name)
                 status = TOOL_STATUS_MAP.get(tool_name, TOOL_STATUS_MAP["_default"])
                 yield f"data: {json.dumps({'status': status})}\n\n"
 
-            # LLM 产出 token → 逐字推送
+            # LLM 产出 token → 逐字推送 + 标记首 token
             elif kind == "on_chat_model_stream":
                 chunk = event["data"]["chunk"]
                 if chunk.content:
+                    if not first_token_seen:
+                        first_token_seen = True
+                        trace_ctx.on_first_token()
                     full_text += chunk.content
                     yield f"data: {json.dumps({'token': chunk.content})}\n\n"
 
-            # 工具执行结束 → 通知前端可以恢复打字状态
+            # 工具执行结束 → 通知前端 + 追踪记录耗时
             elif kind == "on_tool_end":
+                trace_ctx.on_tool_end()
                 yield f"data: {json.dumps({'status': ''})}\n\n"
 
-    except Exception:
+    except Exception as e:
+        error_msg = str(e)
         # astream_events 失败时，降级为非流式一次性返回
         result = agent.invoke({"messages": input_messages})
         full_text = result["messages"][-1].content
         yield f"data: {json.dumps({'token': full_text})}\n\n"
 
+    # —— 追踪：结束计时，估算 token + 保存 ——
+    input_text = user_message + system_prompt
+    tokens_in = TraceContext.estimate_tokens(input_text)
+    tokens_out = TraceContext.estimate_tokens(full_text)
+    trace_ctx.end(error=error_msg, tokens_input=tokens_in, tokens_output=tokens_out)
+
     # 保存到历史
-    history.append(HumanMessage(content=user_message))
-    history.append(AIMessage(content=full_text))
-    _trim_history(history)
+    history_list.append(HumanMessage(content=user_message))
+    history_list.append(AIMessage(content=full_text))
+    _trim_history(history_list)
 
     # 解析并发送最终结果（含 followUps）
     reply, action, results, follow_ups = _parse_reply(full_text)

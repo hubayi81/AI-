@@ -21,6 +21,9 @@ class ChatRequest(BaseModel):
     products:list[Product] = []
     # 用户画像上下文（Java 端根据收藏/历史计算后传入，可为空）
     user_context:str = ""
+    # 对话历史：Java 端从 MySQL 查出后传入，Python 用于恢复 Agent 记忆
+    # 为什么由 Java 传入而不是 Python 自己查？—— Python 不连数据库，保持架构简单
+    history:list[dict] = []
 
 class RecommendResult(BaseModel):
     """推荐结果里的每一项"""
