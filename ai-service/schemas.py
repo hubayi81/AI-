@@ -1,3 +1,7 @@
+#定义数据结构
+#Pydantic 模型，定义了接口的输入输出长什么样
+# Product: 商品有哪些字段（id/name/price/category...）
+
 from pydantic import BaseModel
 
 class Product(BaseModel):

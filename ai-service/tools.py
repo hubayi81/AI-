@@ -1,3 +1,5 @@
+#工具包
+
 import json
 
 from langchain.tools import tool
@@ -12,12 +14,28 @@ def create_tools(products: list[dict], retriever=None, knowledge_base=None):
 
     def _apply_filters(items: list[dict], **kwargs) -> list[dict]:
         """对候选商品列表施加结构化过滤（gender/category/brand/price）"""
+        # 品牌中英文映射：用户可能说"阿迪达斯"，数据库存的是"Adidas"
+        # 为什么不全用中文？—— 种子数据用的是国际通用英文品牌名
+        BRAND_MAP = {
+            "阿迪达斯": "adidas", "adidas": "adidas",
+            "耐克": "nike", "nike": "nike",
+            "匡威": "converse", "converse": "converse",
+            "范斯": "vans", "vans": "vans",
+            "亚瑟士": "asics", "asics": "asics",
+            "卡骆驰": "crocs", "crocs": "crocs",
+            "on": "on",   # On 跑鞋，中英文同名
+        }
         results = []
         for p in items:
             if kwargs.get("category") and p.get("category", "") != kwargs["category"]:
                 continue
-            if kwargs.get("brand") and p.get("brand", "").lower() != kwargs["brand"].lower():
-                continue
+            if kwargs.get("brand"):
+                brand_input = kwargs["brand"].lower()
+                brand_db = p.get("brand", "").lower()
+                # 先尝试映射（中文→英文），再比较
+                brand_mapped = BRAND_MAP.get(brand_input, brand_input)
+                if brand_db != brand_mapped:
+                    continue
             if kwargs.get("gender"):
                 gender_map = {"男": "male", "女": "female", "通用": "unisex", "中性": "unisex"}
                 filter_gender = gender_map.get(kwargs["gender"], kwargs["gender"])
@@ -35,10 +53,11 @@ def create_tools(products: list[dict], retriever=None, knowledge_base=None):
     @tool
     def search_products(keyword: str = "", category: str = "", brand: str = "",
                         gender: str = "", min_price: float = 0, max_price: float = 0) -> str:
-        """在商品库中语义搜索鞋款。参数：
+        """在商品库中语义搜索鞋款。已调 2 次仍无结果时应直接告知用户，不要再调。
+        参数：
         keyword: 需求描述，如"缓震好适合膝盖不好的人"、"轻便透气夏天穿"
         category: 鞋类，如跑鞋、运动鞋、篮球鞋、休闲鞋
-        brand: 品牌名
+        brand: 品牌英文名，如 Nike, Adidas
         gender: 性别 male/female/unisex
         min_price: 最低预算
         max_price: 最高预算
@@ -54,6 +73,9 @@ def create_tools(products: list[dict], retriever=None, knowledge_base=None):
             category=category, brand=brand,
             gender=gender, min_price=min_price, max_price=max_price
         )
+        # 空结果时返回提示，防止 Agent 无限重试
+        if not items:
+            return json.dumps({"empty": True, "hint": "没有匹配的商品，请放宽条件或告知用户"}, ensure_ascii=False)
         return json.dumps(items[:8], ensure_ascii=False)
 
     @tool
@@ -131,13 +153,27 @@ def create_tools(products: list[dict], retriever=None, knowledge_base=None):
             """在鞋类专业知识库中搜索。当用户问"为什么""怎么选""什么材质""怎么保养"
             "适合什么脚型""某品牌有什么特点"等专业问题时，先调这个工具获取专业知识。
             参数：
-            query: 搜索关键词，如"扁平足怎么选跑鞋""EVA和Boost的区别""篮球鞋怎么保养" """
+            query: 搜索关键词，如"扁平足怎么选跑鞋""EVA和Boost的区别""篮球鞋怎么保养"
+
+            重要规则（防幻觉）：
+            - 只使用本工具返回的知识内容，不要自己编造专业信息
+            - 引用知识时必须标注来源，格式：【来源：XX】
+            - 如果置信度为 low，要告知用户"该知识点暂未确认，建议进一步核实"
+            - 低置信度内容不要作为推荐的主要依据"""
             chunks = knowledge_base.search(query, top_k=3)
             if not chunks:
                 return json.dumps({"message": "未找到相关知识"}, ensure_ascii=False)
-            # 返回时附带来源文件名，Agent 回复时可以引用
+
+            # 返回时附带来源、置信度、关键词标签，Agent 用于防幻觉校验
             result = {"knowledge": [
-                {"content": c["text"], "source": c["source"], "heading": c["heading"]}
+                {
+                    "content": c["content"],
+                    "heading": c["heading"],
+                    "source": c["source"],
+                    "domain": c.get("domain", ""),
+                    "confidence": c.get("confidence", "medium"),
+                    "tags": c.get("tags", []),
+                }
                 for c in chunks
             ]}
             return json.dumps(result, ensure_ascii=False)

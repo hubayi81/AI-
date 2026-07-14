@@ -254,12 +254,27 @@
             box-shadow: 0 8px 32px rgba(245,133,31,0.12), 0 0 0 1px rgba(245,133,31,0.08);
         }
         .rec-thumb {
-            width: 52px; height: 52px; border-radius: 8px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-family: "Arial Black","Impact",sans-serif;
-            font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.55);
+            width: 58px; height: 58px; border-radius: 10px; flex-shrink: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+            font-size: 20px; font-weight: 900; color: rgba(255,255,255,0.85);
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+            position: relative; overflow: hidden;
         }
-        .rec-img { width: 52px; height: 52px; border-radius: 8px; flex-shrink: 0; object-fit: cover; }
+        .rec-thumb::after {
+            content: '';
+            position: absolute; top: -8px; right: -8px;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+        /* 品牌字样：占位卡片底部小字显示品牌名 */
+        .rec-thumb-brand {
+            font-family: "PingFang SC","Microsoft YaHei",sans-serif;
+            font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.7); margin-top: 1px;
+            max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .rec-img { width: 58px; height: 58px; border-radius: 10px; flex-shrink: 0; object-fit: cover; }
         .rec-rank { font-family: "Arial Black","Impact",sans-serif; font-size: 22px; font-weight: 900; color: var(--gold); min-width: 32px; }
         .rec-info { flex: 1; }
         .rec-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
@@ -287,6 +302,51 @@
         }
         .followup-chip:hover { background: var(--gold); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,133,31,0.25); }
         .feedback-bar { display: flex; gap: 8px; margin-top: 10px; }
+
+        /* ===== 用户画像面板 ===== */
+        .profile-dashboard { max-width: 900px; margin: 0 auto; padding: 20px 0; }
+        .profile-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .profile-tag {
+            display: inline-block; padding: 5px 14px; border-radius: 16px;
+            font-size: 12px; font-weight: 600; letter-spacing: 1px;
+            background: rgba(245,133,31,0.07); color: var(--gold);
+            border: 1px solid rgba(245,133,31,0.2);
+        }
+        .profile-tag.brand { background: rgba(74,144,217,0.06); color: var(--info); border-color: rgba(74,144,217,0.18); }
+        .profile-tag.cat { background: rgba(60,157,112,0.06); color: var(--success); border-color: rgba(60,157,112,0.18); }
+        .profile-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        @media (max-width: 600px) { .profile-cards { grid-template-columns: 1fr; } }
+        .profile-card {
+            background: var(--white); border-radius: 14px; padding: 24px 20px; text-align: center;
+            box-shadow: 0 2px 12px rgba(44,36,22,0.04);
+        }
+        .profile-card-icon { font-size: 28px; margin-bottom: 8px; }
+        .profile-card-num { font-family: "Arial Black","Impact","PingFang SC",sans-serif; font-size: 32px; font-weight: 900; color: var(--ink); }
+        .profile-card-label { font-size: 12px; color: var(--warm-gray); letter-spacing: 2px; margin-top: 4px; }
+        .profile-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .profile-detail-grid { grid-template-columns: 1fr; } }
+        .profile-detail-card {
+            background: var(--white); border-radius: 14px; padding: 20px 24px;
+            box-shadow: 0 2px 12px rgba(44,36,22,0.04);
+        }
+        .profile-detail-title { font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--ink); margin-bottom: 12px; }
+        .profile-price {
+            font-family: "Arial Black","Impact","PingFang SC",sans-serif;
+            font-size: 28px; font-weight: 900; color: var(--gold);
+        }
+        .profile-price-sub { font-size: 13px; font-weight: 400; color: var(--warm-gray); }
+        .profile-feedback-row { display: flex; gap: 20px; }
+        .profile-fb { font-size: 18px; font-weight: 700; }
+        .profile-fb.like { color: var(--success); }
+        .profile-fb.dislike { color: var(--danger); }
+        .profile-empty-text { font-size: 13px; color: var(--warm-gray); }
+        .profile-fav-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .profile-fav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: rgba(26,26,46,0.02); }
+        .profile-fav-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+        .profile-fav-noimg { width: 44px; height: 44px; border-radius: 8px; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; }
+        .profile-fav-info { flex: 1; min-width: 0; }
+        .profile-fav-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .profile-fav-meta { font-size: 11px; color: var(--warm-gray); }
         .feedback-btn {
             background: none; border: 1px solid var(--border); cursor: pointer;
             font-size: 13px; padding: 4px 14px; border-radius: 14px;
@@ -304,6 +364,26 @@
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to{transform:rotate(360deg)} }
+        .tool-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .tool-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; padding: 3px 10px; border-radius: 12px;
+            letter-spacing: 1px; transition: all 0.3s var(--ease-out-expo);
+        }
+        .tool-tag.running {
+            background: rgba(245,133,31,0.08); color: var(--gold);
+            border: 1px solid rgba(245,133,31,0.2);
+        }
+        .tool-tag.done {
+            background: rgba(60,157,112,0.06); color: var(--success);
+            border: 1px solid rgba(60,157,112,0.15);
+        }
+        .tool-tag-spinner {
+            width: 10px; height: 10px;
+            border: 2px solid var(--gold); border-top-color: transparent; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .tool-tag-check { font-size: 10px; line-height: 1; }
         .typing { display: flex; gap: 5px; padding: 8px 0; }
         .typing span { width: 7px; height: 7px; background: var(--warm-gray); border-radius: 50%; animation: bounce 1.2s infinite; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
@@ -554,7 +634,7 @@
 <div id="app" v-cloak>
     <!-- 顶栏 -->
     <nav class="nav-bar">
-        <div class="nav-logo"><div class="nav-logo-dot"></div>AI鞋类导购</div>
+        <div class="nav-logo"><div class="nav-logo-dot"></div>AI鞋类商品推荐</div>
         <div class="nav-right">
             <button @click="goProfile" style="background:none;border:none;cursor:pointer;padding:0;">
                 <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Impact,sans-serif;font-size:16px;font-weight:900;box-shadow:0 0 12px rgba(245,133,31,0.3);" :title="user ? user.username : ''">
@@ -569,7 +649,7 @@
     <div class="sidebar-wrap">
         <div class="sidebar-trigger"></div>
         <aside class="sidebar">
-        <div class="sidebar-logo"><div class="sidebar-logo-dot"></div>AI鞋类导购</div>
+        <div class="sidebar-logo"><div class="sidebar-logo-dot"></div>AI鞋类商品推荐</div>
         <div class="sidebar-user" @click="goProfile" title="个人中心">
             <div class="user-avatar">{{ user ? user.username.charAt(0).toUpperCase() : '?' }}</div>
             <div class="user-info">
@@ -599,13 +679,16 @@
         <!-- 导航（底栏上方） -->
         <nav class="sidebar-nav" style="flex:none;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);margin-top:6px;">
             <button :class="'nav-item' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">
-                <span class="nav-icon">🤖</span>AI 智能导购
+                <span class="nav-icon">🤖</span>AI 智能推荐
             </button>
             <button :class="'nav-item' + (tab === 'browse' ? ' active' : '')" @click="tab = 'browse'">
                 <span class="nav-icon">🔍</span>全部鞋款
             </button>
             <button class="nav-item" @click="goProfile">
                 <span class="nav-icon">👤</span>个人中心
+            </button>
+            <button :class="'nav-item' + (tab === 'profile' ? ' active' : '')" @click="tab = 'profile'; loadProfile()">
+                <span class="nav-icon">🧬</span>我的画像
             </button>
             <a v-if="isAdmin" class="nav-item" href="/admin/stats.html" style="text-decoration:none;">
                 <span class="nav-icon">📊</span>可观测性看板
@@ -632,8 +715,9 @@
 
     <!-- Tab 切换 -->
     <div class="tab-bar">
-        <button :class="'tab-btn' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">🤖 AI 智能导购</button>
+        <button :class="'tab-btn' + (tab === 'ai' ? ' active' : '')" @click="tab = 'ai'">🤖 AI 智能推荐</button>
         <button :class="'tab-btn' + (tab === 'browse' ? ' active' : '')" @click="tab = 'browse'">🔍 全部鞋款</button>
+        <button :class="'tab-btn' + (tab === 'profile' ? ' active' : '')" @click="tab = 'profile'; loadProfile()">🧬 我的画像</button>
     </div>
 
     <!-- Tab 1: AI 对话 -->
@@ -667,6 +751,15 @@
                 <div v-for="(msg, i) in chatMessages" :key="i" :class="'msg-row ' + msg.role">
                     <div class="msg-avatar">{{ msg.role === 'ai' ? '🤖' : '👤' }}</div>
                     <div class="msg-bubble">
+                        <!-- Agent 工具调用标签：显示 AI 在后台做了什么 -->
+                        <div v-if="msg._tools && msg._tools.length > 0" class="tool-tags">
+                            <span v-for="(t, ti) in msg._tools" :key="ti"
+                                  :class="'tool-tag' + (t.done ? ' done' : ' running')">
+                                <span v-if="!t.done" class="tool-tag-spinner"></span>
+                                <span v-else class="tool-tag-check">✓</span>
+                                {{ t.label }}
+                            </span>
+                        </div>
                         <div v-html="msg.content"></div>
                         <div v-if="msg.results && msg.results.length > 0" class="rec-cards">
                             <div v-for="(r, j) in msg.results" :key="j" class="rec-card" @click.stop="r._expanded = !r._expanded">
@@ -794,6 +887,98 @@
         </div>
     </div>
 
+    <!-- Tab 3: 我的画像 -->
+    <div :class="'tab-content' + (tab === 'profile' ? ' active' : '')">
+        <div v-if="profileData" class="profile-dashboard">
+            <!-- 风格标签 -->
+            <div class="profile-tags" v-if="profileData.styleTags && profileData.styleTags.length > 0">
+                <span v-for="t in profileData.styleTags" :key="t" class="profile-tag">{{ t }}</span>
+            </div>
+
+            <!-- 核心指标三列 -->
+            <div class="profile-cards">
+                <div class="profile-card">
+                    <div class="profile-card-icon">❤️</div>
+                    <div class="profile-card-num">{{ profileData.favorites?.total || 0 }}</div>
+                    <div class="profile-card-label">收藏鞋款</div>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-card-icon">💬</div>
+                    <div class="profile-card-num">{{ profileData.chat?.conversationCount || 0 }}</div>
+                    <div class="profile-card-label">对话数</div>
+                </div>
+                <div class="profile-card">
+                    <div class="profile-card-icon">📝</div>
+                    <div class="profile-card-num">{{ profileData.chat?.messageCount || 0 }}</div>
+                    <div class="profile-card-label">消息数</div>
+                </div>
+            </div>
+
+            <!-- 偏好详情 -->
+            <div class="profile-detail-grid">
+                <!-- 偏好品牌 -->
+                <div class="profile-detail-card">
+                    <div class="profile-detail-title">🏷️ 偏好品牌</div>
+                    <div class="profile-tags" v-if="profileData.favorites?.brands?.length > 0">
+                        <span v-for="b in profileData.favorites.brands" :key="b" class="profile-tag brand">{{ b }}</span>
+                    </div>
+                    <div v-else class="profile-empty-text">暂无数据，去收藏几双鞋吧</div>
+                </div>
+                <!-- 偏好品类 -->
+                <div class="profile-detail-card">
+                    <div class="profile-detail-title">👟 偏好品类</div>
+                    <div class="profile-tags" v-if="profileData.favorites?.categories?.length > 0">
+                        <span v-for="c in profileData.favorites.categories" :key="c" class="profile-tag cat">{{ c }}</span>
+                    </div>
+                    <div v-else class="profile-empty-text">暂无数据</div>
+                </div>
+                <!-- 价位区间 -->
+                <div class="profile-detail-card">
+                    <div class="profile-detail-title">💰 收藏均价</div>
+                    <div class="profile-price" v-if="profileData.favorites?.avgPrice > 0">
+                        ¥{{ profileData.favorites.avgPrice }}
+                        <span class="profile-price-sub">/ 双</span>
+                    </div>
+                    <div v-else class="profile-empty-text">暂无数据</div>
+                </div>
+                <!-- 反馈统计 -->
+                <div class="profile-detail-card">
+                    <div class="profile-detail-title">📊 推荐反馈</div>
+                    <div class="profile-feedback-row" v-if="profileData.feedback">
+                        <span class="profile-fb like">👍 {{ profileData.feedback.likes || 0 }}</span>
+                        <span class="profile-fb dislike">👎 {{ profileData.feedback.dislikes || 0 }}</span>
+                    </div>
+                    <div v-else class="profile-empty-text">暂无反馈</div>
+                </div>
+            </div>
+
+            <!-- 最近收藏 -->
+            <div class="profile-detail-card" v-if="profileData.favorites?.items?.length > 0" style="margin-top:16px;">
+                <div class="profile-detail-title">🛒 最近收藏的鞋款</div>
+                <div class="profile-fav-list">
+                    <div v-for="(item, i) in profileData.favorites.items.slice(0, 6)" :key="i" class="profile-fav-item">
+                        <img v-if="item.imageUrl" :src="item.imageUrl" class="profile-fav-img" :alt="item.name">
+                        <div v-else class="profile-fav-noimg">{{ (item.name || '鞋').charAt(0) }}</div>
+                        <div class="profile-fav-info">
+                            <div class="profile-fav-name">{{ item.name }}</div>
+                            <div class="profile-fav-meta">{{ item.brand }} · ¥{{ item.price }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 空状态：没有画像数据 -->
+        <div v-else-if="profileData === null && tab === 'profile'" class="empty-chat" style="margin-top:80px;">
+            <div style="font-size:48px;margin-bottom:16px;">🧬</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">画像加载中…</div>
+        </div>
+        <div v-else class="empty-chat" style="margin-top:80px;">
+            <div style="font-size:48px;margin-bottom:16px;">🧬</div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">还没有画像数据</div>
+            <div style="font-size:13px;">去收藏几双鞋、和 AI 聊几句再来吧</div>
+        </div>
+    </div>
+
     <!-- 管理员浮动添加按钮 -->
     <button v-if="isAdmin" class="btn-add-product" @click="openAdd" title="新增鞋款">+</button>
 
@@ -838,13 +1023,16 @@ createApp({
             filteredProducts: [], filterMsg: '',
             favIds: new Set(),
             showModal: false, editingId: null, saving: false,
+            profileData: null,
             form: { name:'', brand:'', category:'', gender:'', price:0, stock:0, imageUrl:'', color:'', sizeRange:'', description:'' }
         }
     },
     computed: {
         isAdmin() { return this.user && this.user.role === 'admin' },
         brands() { return [...new Set(this.allProducts.map(p => p.brand))].sort() },
-        categories() { return [...new Set(this.allProducts.map(p => p.category))].sort() }
+        categories() { return [...new Set(this.allProducts.map(p => p.category))].sort() },
+        // localStorage key 带 userId，防止切换账号后读到上一个用户的对话 ID
+        convStorageKey() { return 'shoe_current_conv_' + (this.user ? this.user.id : '') }
     },
     async mounted() {
         // 1. 检查登录
@@ -856,7 +1044,7 @@ createApp({
         this.filterProducts()
         this.checkAIHealth()
         // 3. 从 localStorage 恢复当前对话 ID（刷新页面后继续之前的对话）
-        this.currentConversationId = localStorage.getItem('shoe_current_conv') || this.generateConvId()
+        this.currentConversationId = localStorage.getItem(this.convStorageKey) || this.generateConvId()
         this.conversationId = this.currentConversationId
         // 4. 加载对话列表 + 当前对话的历史消息
         await this.loadConversations()
@@ -883,7 +1071,7 @@ createApp({
         newConversation() {
             this.currentConversationId = this.generateConvId()
             this.conversationId = this.currentConversationId
-            localStorage.setItem('shoe_current_conv', this.currentConversationId)
+            localStorage.setItem(this.convStorageKey, this.currentConversationId)
             this.chatMessages = []
             this.chatStatus = ''
             this.loadConversations()
@@ -893,7 +1081,7 @@ createApp({
             if (this.currentConversationId === convId) return
             this.currentConversationId = convId
             this.conversationId = convId
-            localStorage.setItem('shoe_current_conv', convId)
+            localStorage.setItem(this.convStorageKey, convId)
             this.chatMessages = []
             this.chatStatus = ''
             await this.loadConversationMessages(convId)
@@ -1017,7 +1205,7 @@ createApp({
                 const r = await fetch('/api/ai/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
                 if (!r.ok) throw new Error('SSE fail')
                 const reader = r.body.getReader(); const decoder = new TextDecoder(); let buffer = ''
-                const aiIdx = this.chatMessages.push({role:'ai',content:'',action:'chat',results:[],followUps:[]}) - 1
+                const aiIdx = this.chatMessages.push({role:'ai',content:'',action:'chat',results:[],followUps:[],_tools:[]}) - 1
                 while (true) {
                     const {done,value} = await reader.read(); if (done) break
                     buffer += decoder.decode(value,{stream:true}); const lines = buffer.split('\n'); buffer = lines.pop()||''
@@ -1026,11 +1214,24 @@ createApp({
                         try {
                             const d = JSON.parse(line.slice(6))
                             if (d.token) { this.chatMessages[aiIdx].content += this.fmtToken(d.token); this.$nextTick(()=>this.scrollChat()) }
+                            // 注意：tool_start/tool_end 必须在 status 之前检查——因为它们也带 status 字段
+                            else if (d.tool_start) {
+                                this.chatMessages[aiIdx]._tools.push({name: d.tool_start, label: d.tool_label, done: false})
+                                this.chatStatus = d.status
+                                this.$nextTick(()=>this.scrollChat())
+                            }
+                            else if (d.tool_end) {
+                                const tool = this.chatMessages[aiIdx]._tools.find(t => t.name === d.tool_end && !t.done)
+                                if (tool) { tool.done = true; tool.label = d.tool_label }
+                                else { this.chatMessages[aiIdx]._tools.push({name: d.tool_end, label: d.tool_label, done: true}) }
+                                this.chatStatus = ''
+                                this.$nextTick(()=>this.scrollChat())
+                            }
                             else if (d.status!==undefined) { this.chatStatus = d.status; this.$nextTick(()=>this.scrollChat()) }
                             else if (d.done) {
                                 this.conversationId = d.conversation_id
                                 this.currentConversationId = d.conversation_id
-                                localStorage.setItem('shoe_current_conv', d.conversation_id)
+                                localStorage.setItem(this.convStorageKey, d.conversation_id)
                                 this.chatMessages[aiIdx].content = this.cleanMarkdown(d.reply)
                                 this.chatMessages[aiIdx].action = d.action
                                 this.chatMessages[aiIdx].results = d.results||[]
@@ -1045,7 +1246,7 @@ createApp({
                     const r2 = await fetch('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
                     const d2 = await r2.json(); const resp = d2.data; this.conversationId = resp.conversation_id
                     this.currentConversationId = resp.conversation_id
-                    localStorage.setItem('shoe_current_conv', resp.conversation_id)
+                    localStorage.setItem(this.convStorageKey, resp.conversation_id)
                     this.chatMessages.push({role:'ai',content:this.cleanMarkdown(resp.reply),action:resp.action,results:resp.results||[],followUps:resp.followUps||[]})
                     this.saveChatHistory(msg, resp.reply)
                 } catch(_) { this.chatMessages.push({role:'ai',content:'抱歉，AI 服务暂时不可用，请稍后再试。',action:'chat',results:[],followUps:[]}) }
@@ -1078,8 +1279,15 @@ createApp({
         saveChatHistory(userMsg, aiReply) {
             fetch('/api/user/ai-history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId||'',user_message:userMsg,ai_reply:aiReply})}).catch(()=>{})
         },
+        async loadProfile() {
+            if (this.profileData) return  // 已加载过，不重复请求
+            try {
+                const r = await fetch('/api/user/profile'); const d = await r.json()
+                if (d.code === 200) this.profileData = d.data
+            } catch (_) { this.profileData = undefined }
+        },
         goProfile() { window.location.href='/profile.html' },
-        async logout() { if(!confirm('确定要退出登录吗？')) return; try{await fetch('/api/user/logout',{method:'POST'})}catch(e){}; window.location.href='/login.html' },
+        async logout() { if(!confirm('确定要退出登录吗？')) return; try{await fetch('/api/user/logout',{method:'POST'})}catch(e){}; localStorage.removeItem(this.convStorageKey); window.location.href='/login.html' },
         // 管理员 CRUD
         resetForm() { this.form={name:'',brand:'',category:'',gender:'',price:0,stock:0,imageUrl:'',color:'',sizeRange:'',description:''}; this.editingId=null },
         openAdd() { this.resetForm(); this.showModal=true },

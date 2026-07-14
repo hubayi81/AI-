@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人中心 - AI鞋类导购</title>
+    <title>个人中心 - AI鞋类商品推荐</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <style>
         /* ===== Design Tokens（与 index.html 统一） ===== */
@@ -172,7 +172,7 @@
 <body>
 <div id="app">
     <nav class="navbar">
-        <a href="/index.html" class="nav-left" style="text-decoration:none;color:inherit;">👟 AI 鞋类导购</a>
+        <a href="/index.html" class="nav-left" style="text-decoration:none;color:inherit;">👟 AI 商品推荐</a>
         <div class="nav-right">
             <a href="/index.html">返回首页</a>
             <div class="nav-avatar">{{ avatarChar }}</div>
@@ -262,7 +262,7 @@
                             <circle cx="76" cy="34" r="2" fill="#F5851F"/>
                         </svg>
                     </div>
-                    <div class="empty-text">暂无 AI 对话记录<br>去 AI 导购页面聊几句吧</div>
+                    <div class="empty-text">暂无 AI 对话记录<br>去 AI 商品推荐页面聊几句吧</div>
                 </div>
                 <div v-else class="history-list">
                     <template v-for="(group, gi) in groupedHistory" :key="gi">

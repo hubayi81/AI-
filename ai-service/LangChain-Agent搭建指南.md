@@ -1,4 +1,4 @@
-# LangChain Agent 搭建指南 — AI 鞋类导购助手
+# LangChain Agent 搭建指南 — AI 鞋类推荐助手
 
 > 本文档是教学文档，也是开发文档。每一节都是你先理解再动手的基础。
 
@@ -328,7 +328,7 @@ def process_message(conversation_id, user_message, products):
 `result["messages"]` 是一个列表，包含整个 ReAct 循环中所有消息：
 ```
 [
-  SystemMessage("你是导购助手..."),
+  SystemMessage("你是推荐助手..."),
   HumanMessage("脚宽跑步预算500"),
   AIMessage(tool_calls=[search_products(...)]),    ← LLM 决定调工具
   ToolMessage("返回了8款鞋..."),                    ← 工具执行结果

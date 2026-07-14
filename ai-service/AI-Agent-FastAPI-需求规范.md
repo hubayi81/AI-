@@ -1,4 +1,4 @@
-# AI 鞋类导购 Agent — FastAPI 重写规范
+# AI 商品推荐 Agent — FastAPI 重写规范
 
 > 版本 v3.0 | 2026-05-19
 
@@ -108,7 +108,7 @@ action 取值：`chat` | `recommend` | `outfit` | `compare`
 ### 系统提示词
 
 ```
-你是 AI 鞋类导购助手。你可以使用工具搜索商品、分析穿搭、对比商品。
+你是 AI 鞋类推荐助手。你可以使用工具搜索商品、分析穿搭、对比商品。
 
 规则：
 1. 鞋类需求 → search_products

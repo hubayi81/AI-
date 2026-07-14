@@ -23,9 +23,11 @@ public class AiAgentClient {
 
     private final RestTemplate rest;
 
-    private static final String AGENT_URL = "http://127.0.0.1:5000/api/ai/agent/chat";
-    private static final String AGENT_STREAM_URL = "http://127.0.0.1:5000/api/ai/agent/chat/stream";
-    private static final String HEALTH_URL = "http://127.0.0.1:5000/health";
+    // Docker 环境下通过环境变量 AI_SERVICE_URL 配置 Python 服务地址
+    private static final String AI_BASE = System.getenv().getOrDefault("AI_SERVICE_URL", "http://127.0.0.1:5000");
+    private static final String AGENT_URL = AI_BASE + "/api/ai/agent/chat";
+    private static final String AGENT_STREAM_URL = AI_BASE + "/api/ai/agent/chat/stream";
+    private static final String HEALTH_URL = AI_BASE + "/health";
 
     public AiAgentClient() {
         this.rest = new RestTemplate();

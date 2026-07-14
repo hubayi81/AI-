@@ -86,7 +86,8 @@ public class AiChatHistoryController {
             @PathVariable String conversationId, HttpSession session) {
         User user = currentUser(session);
         if (user == null) return Result.error(401, "请先登录");
-        List<AiChatHistory> messages = dao.findByConversationId(conversationId);
+        // user_id 校验防止越权访问他人对话
+        List<AiChatHistory> messages = dao.findByConversationId(user.getId(), conversationId);
         return Result.success(messages);
     }
 
@@ -100,7 +101,7 @@ public class AiChatHistoryController {
             @PathVariable String conversationId, HttpSession session) {
         User user = currentUser(session);
         if (user == null) return Result.error(401, "请先登录");
-        dao.deleteByConversationId(conversationId);
+        dao.deleteByConversationId(user.getId(), conversationId);
         return Result.success("已删除");
     }
 }

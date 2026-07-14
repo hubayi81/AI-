@@ -8,3 +8,23 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis：Session 共享（Spring Session）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 10      # 最大连接数
+          max-idle: 5         # 最大空闲连接
+          min-idle: 2         # 最小空闲连接
+
+  # Session 配置
+  session:
+    redis:
+      namespace: aishoes:session    # Redis key 前缀
+      flush-mode: on_save           # 每次保存时写 Redis
+    timeout: 86400s                 # Session 24 小时过期

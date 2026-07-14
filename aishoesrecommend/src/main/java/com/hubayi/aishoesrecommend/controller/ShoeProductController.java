@@ -6,6 +6,7 @@ import com.hubayi.aishoesrecommend.client.AiChatResponse;
 import com.hubayi.aishoesrecommend.common.Result;
 import com.hubayi.aishoesrecommend.dao.AiChatHistoryDao;
 import com.hubayi.aishoesrecommend.dao.FavoriteDao;
+import com.hubayi.aishoesrecommend.dao.FeedbackDao;
 import com.hubayi.aishoesrecommend.entity.AiChatHistory;
 import com.hubayi.aishoesrecommend.entity.Favorite;
 import com.hubayi.aishoesrecommend.entity.ShoeProduct;
@@ -25,13 +26,16 @@ public class ShoeProductController {
     private final AiAgentClient aiAgentClient;
     private final FavoriteDao favoriteDao;
     private final AiChatHistoryDao aiChatHistoryDao;
+    private final FeedbackDao feedbackDao;
 
     public ShoeProductController(ShoeProductService service, AiAgentClient aiAgentClient,
-                                 FavoriteDao favoriteDao, AiChatHistoryDao aiChatHistoryDao) {
+                                 FavoriteDao favoriteDao, AiChatHistoryDao aiChatHistoryDao,
+                                 FeedbackDao feedbackDao) {
         this.service = service;
         this.aiAgentClient = aiAgentClient;
         this.favoriteDao = favoriteDao;
         this.aiChatHistoryDao = aiChatHistoryDao;
+        this.feedbackDao = feedbackDao;
     }
 
     // 查全部商品
@@ -90,6 +94,81 @@ public class ShoeProductController {
     public Result<Map<String, Boolean>> aiHealth() {
         boolean online = aiAgentClient.health();
         return Result.success(Map.of("online", online));
+    }
+
+    // ===== 用户画像 =====
+
+    /**
+     * 返回当前用户的画像数据，前端渲染为可视化卡片。
+     * 画像 = 收藏偏好（品牌/品类/价位）+ 对话统计 + 反馈统计。
+     * 用户可在侧边栏点击「我的画像」查看。
+     */
+    @GetMapping("/api/user/profile")
+    public Result<Map<String, Object>> userProfile(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) return Result.error(401, "请先登录");
+
+        Map<String, Object> profile = new LinkedHashMap<>();
+        profile.put("username", user.getUsername());
+        profile.put("createdAt", user.getCreateTime());
+
+        // — 收藏偏好 —
+        var favProducts = favoriteDao.findFavoritesWithProduct(user.getId());
+        Set<String> brands = new LinkedHashSet<>();
+        Set<String> categories = new LinkedHashSet<>();
+        Set<String> genders = new LinkedHashSet<>();
+        double totalPrice = 0;
+        int priceCount = 0;
+        List<Map<String, Object>> favList = new ArrayList<>();
+
+        for (var p : favProducts) {
+            String brand = p.get("brand") != null ? p.get("brand").toString() : "";
+            String cat = p.get("category") != null ? p.get("category").toString() : "";
+            String gender = p.get("gender") != null ? p.get("gender").toString() : "";
+            Object priceObj = p.get("price");
+            if (!brand.isEmpty()) brands.add(brand);
+            if (!cat.isEmpty()) categories.add(cat);
+            if (!gender.isEmpty()) genders.add(gender);
+            if (priceObj != null) {
+                totalPrice += ((Number) priceObj).doubleValue();
+                priceCount++;
+            }
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("name", p.get("name"));
+            item.put("brand", p.get("brand"));
+            item.put("price", p.get("price"));
+            item.put("imageUrl", p.get("imageUrl"));
+            favList.add(item);
+        }
+
+        Map<String, Object> favorites = new LinkedHashMap<>();
+        favorites.put("total", favProducts.size());
+        favorites.put("brands", new ArrayList<>(brands));
+        favorites.put("categories", new ArrayList<>(categories));
+        favorites.put("genders", new ArrayList<>(genders));
+        favorites.put("avgPrice", priceCount > 0 ? Math.round(totalPrice / priceCount) : 0);
+        favorites.put("items", favList);
+        profile.put("favorites", favorites);
+
+        // — 对话统计 —
+        Map<String, Object> chatStats = aiChatHistoryDao.getUserStats(user.getId());
+        profile.put("chat", chatStats);
+
+        // — 反馈统计 —
+        Map<String, Object> feedbackStats = feedbackDao.countByUserId(user.getId());
+        profile.put("feedback", feedbackStats);
+
+        // — 推荐风格（从收藏推断）—
+        List<String> styleTags = new ArrayList<>();
+        if (priceCount > 0 && (totalPrice / priceCount) > 800) styleTags.add("高端型");
+        else if (priceCount > 0 && (totalPrice / priceCount) > 400) styleTags.add("中端型");
+        else if (priceCount > 0) styleTags.add("性价比型");
+        if (favProducts.size() >= 5) styleTags.add("收藏达人");
+        if (categories.size() >= 3) styleTags.add("多元化");
+        if (categories.size() == 1) styleTags.add("专注" + categories.iterator().next() + "党");
+        profile.put("styleTags", styleTags);
+
+        return Result.success(profile);
     }
 
     // ===== AI 流式对话入口（SSE 透传 Python）=====
@@ -201,7 +280,7 @@ public class ShoeProductController {
         User user = (User) session.getAttribute("user");
         if (user == null) return history;  // 未登录用户没有持久化历史
 
-        List<AiChatHistory> messages = aiChatHistoryDao.findByConversationId(conversationId);
+        List<AiChatHistory> messages = aiChatHistoryDao.findByConversationId(user.getId(), conversationId);
         // 只取最近 20 条（10 轮），和 Python 端截断策略一致
         int start = Math.max(0, messages.size() - 20);
         for (int i = start; i < messages.size(); i++) {

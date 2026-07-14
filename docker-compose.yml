@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+  # ─── Redis 内存数据库 ───
+  redis:
+    image: redis:7-alpine
+    container_name: shoe-redis
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data                  # AOF 持久化
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - shoe-net
+
+  # ─── MySQL 数据库 ───
+  mysql:
+    image: mysql:8.0
+    container_name: shoe-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aishoes}
+    ports:
+      - "3307:3306"                       # 映射到 3307，避免和本机 MySQL 冲突
+    volumes:
+      - mysql_data:/var/lib/mysql         # 数据持久化
+      - ./docker-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - shoe-net
+
+  # ─── Python AI Agent 服务 ───
+  ai-service:
+    build: ./ai-service
+    container_name: shoe-ai
+    environment:
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      REDIS_HOST: redis                  # Docker 内用容器名做 DNS
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s                  # 模型加载需要时间
+    networks:
+      - shoe-net
+
+  # ─── Java Spring Boot 后端 ───
+  app:
+    build: ./aishoesrecommend
+    container_name: shoe-app
+    ports:
+      - "8080:8080"
+    environment:
+      # 数据库连接（指向 Docker 内的 MySQL 容器）
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/aishoes?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # Python AI 服务地址（Docker 内部网络）
+      AI_SERVICE_URL: http://ai-service:5000
+      # Redis（Session 共享 + 查询缓存）
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    networks:
+      - shoe-net
+
+volumes:
+  mysql_data:                           # MySQL 数据卷
+  redis_data:                           # Redis AOF 持久化数据卷
+
+networks:
+  shoe-net:
+    driver: bridge

@@ -1,12 +1,16 @@
+import hashlib
 import json
+import pickle
 import re
 import uuid
+
+import redis
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage, AIMessage
 
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
-from retriever import ShoeRetriever
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, REDIS_HOST, REDIS_PORT, REDIS_DB
+from retriever import ShoeRetriever, get_retriever
 from tools import create_tools
 from knowledge_base import KnowledgeBase
 from trace import TraceContext
@@ -16,7 +20,7 @@ from trace import TraceContext
 # 每次请求重新加载会浪费 I/O + 向量化计算
 _knowledge_base = None
 
-
+#【安全加载 + 降级机制】
 def _get_knowledge_base() -> KnowledgeBase | None:
     """懒加载知识库，加载失败时返回 None（Agent 降级运行，不影响商品搜索）"""
     global _knowledge_base
@@ -29,6 +33,7 @@ def _get_knowledge_base() -> KnowledgeBase | None:
     return _knowledge_base if _knowledge_base is not False else None
 
 # ===== 1. LLM 客户端 =====
+# ① 创建 LLM 客户端（ChatOpenAI 封装 DeepSeek API）
 llm = ChatOpenAI(
     model="deepseek-chat",
     openai_api_key=DEEPSEEK_API_KEY,
@@ -46,8 +51,9 @@ streaming_llm = ChatOpenAI(
 )
 
 # ===== 2. 系统提示词模板 =====
+# ② 写 System Prompt（告诉 Agent 它是什么角色、什么时候该调哪个工具、输出格式要求）
 # {user_context} 在运行时注入，未登录时为空字符串
-SYSTEM_PROMPT_TEMPLATE = """你是 AI 鞋类导购助手。你必须主动使用工具搜索商品。
+SYSTEM_PROMPT_TEMPLATE = """你是 AI 鞋类推荐助手。你必须主动使用工具搜索商品。
 
 行为规则：
 1. 用户提到鞋类需求 → 立即调 search_products 搜索
@@ -55,7 +61,12 @@ SYSTEM_PROMPT_TEMPLATE = """你是 AI 鞋类导购助手。你必须主动使用
 3. 用户要求对比 → 立即调 compare_shoes
 4. 信息不够时 → 调 ask_clarify 追问，问完继续搜
 5. 用户问专业知识（材质对比/足型选鞋/运动场景/品牌特点/尺码/保养）→ 先调 search_knowledge 获取专业知识，再结合商品推荐。为什么先查知识？—— 有专业依据的推荐比"我觉得这双好"可信得多
-6. 最终推荐时，必须在回复末尾输出 JSON，用 ```json 代码块包裹：
+6. 🔍 防幻觉双检规则（非常重要）：
+   a) 禁止编造：只能使用 search_knowledge 返回的知识内容，不要自己编造鞋类专业知识
+   b) 强制来源标注：引用知识时必须用"根据【XX领域·XX】"格式标注来源，例如"根据【材质科技·EVA 中底】"
+   c) 置信度分级处理：高置信度（high）可直接引用；中置信度（medium）可引用但不要绝对语气；低置信度（low）标注"暂未完全确认"
+   d) 知识未找到时：直接告知用户"我暂时没有这方面的资料"，不要试图猜测
+7. 最终推荐时，必须在回复末尾输出 JSON，用 ```json 代码块包裹：
 
 ```json
 {{
@@ -74,7 +85,7 @@ followUps 是 2-3 个自然的后续追问，帮助用户进一步筛选，例�
 - "这鞋适合长时间走路吗？"
 
 输出风格要求（非常重要）：
-- 用自然的口语中文，像真人导购在跟你聊天
+- 用自然的口语中文，像真人商品推荐在跟你聊天
 - 禁止使用 markdown 标题（##、### 等）
 - 禁止使用加粗（**文字**）
 - 禁止使用 emoji 数字（1️⃣2️⃣3️⃣）和装饰符号（⭐✨🔥）
@@ -97,17 +108,71 @@ def _build_system_prompt(user_context: str = "") -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(user_context=context_block)
 
 
-# ===== 3. 对话记忆（内存字典）=====
-conversations: dict[str, list] = {}
+# ===== 3. 对话记忆（Redis）=====
+# Redis 客户端：惰性连接，首次调用时自动连接
+# 为什么用 Redis 替代 Python dict？
+# —— 1) 多 worker 共享：uvicorn 多 worker 时内存 dict 不互通，用户请求被负载到
+#    不同 worker 会丢失对话上下文；Redis 是独立进程，所有 worker 共享
+# —— 2) 持久化：Python 进程重启不丢对话（RDB/AOF 保障）
+# —— 3) 原子操作：Redis String GET/SET 自带原子性，无需额外加锁
+# —— 4) 自动过期：TTL 24 小时自动清理冷对话，不需要手动管理内存
+# 降级策略：Redis 连接失败时回退到内存 dict，保证核心功能不挂（一线企业常用模式）
+_redis_client: redis.Redis | None = None
+_fallback_dict: dict[str, list] = {}  # Redis 挂掉时的降级存储
+CONV_TTL = 3600 * 24  # 对话 24 小时后自动过期
+
+
+def _get_redis() -> redis.Redis | None:
+    """惰性连接 Redis，首次调用时连接。失败返回 None 触发降级。"""
+    global _redis_client
+    if _redis_client is None:
+        try:
+            _redis_client = redis.Redis(
+                host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB,
+                socket_connect_timeout=2, socket_timeout=2,
+                decode_responses=False,
+            )
+            _redis_client.ping()
+            print(f"[Agent] Redis 连接成功: {REDIS_HOST}:{REDIS_PORT}")
+        except Exception as e:
+            print(f"[Agent] Redis 连接失败，降级到内存字典: {e}")
+            _redis_client = False
+    return _redis_client if _redis_client is not False else None
 
 
 def _get_history(conversation_id: str) -> list:
-    """获取会话历史，新会话自动创建"""
+    """获取会话历史。优先 Redis，连接失败时降级到内存字典。"""
     if not conversation_id:
         conversation_id = str(uuid.uuid4())[:8]
-    if conversation_id not in conversations:
-        conversations[conversation_id] = []
-    return conversations[conversation_id], conversation_id
+
+    r = _get_redis()
+    if r:
+        try:
+            key = f"conv:{conversation_id}"
+            data = r.get(key)
+            if data:
+                return pickle.loads(data), conversation_id
+        except Exception:
+            pass  # Redis 读失败，降级
+
+    # 降级：使用内存字典
+    if conversation_id not in _fallback_dict:
+        _fallback_dict[conversation_id] = []
+    return _fallback_dict[conversation_id], conversation_id
+
+
+def _save_history(conversation_id: str, history: list):
+    """持久化对话历史到 Redis。失败时静默降级到内存字典。"""
+    r = _get_redis()
+    if r:
+        try:
+            key = f"conv:{conversation_id}"
+            r.setex(key, CONV_TTL, pickle.dumps(history))
+            return
+        except Exception:
+            pass
+
+    _fallback_dict[conversation_id] = history
 
 
 def _trim_history(history: list, max_rounds: int = 10):
@@ -119,9 +184,7 @@ def _trim_history(history: list, max_rounds: int = 10):
 
 
 def _restore_history(target_list: list, history_data: list[dict]):
-    """从持久化历史恢复对话记忆（Agent 启动后第一次对话时调用）。
-    为什么不是每次都覆盖？—— 只追加重放最近的消息，避免改变已有消息的引用。
-    取最近 10 轮（20 条），和 _trim_history 策略一致。"""
+    """从持久化历史恢复对话记忆（Agent 启动后第一次对话时调用）。"""
     for msg in history_data[-20:]:
         role = msg.get("role", "")
         content = msg.get("content", "")
@@ -141,8 +204,19 @@ TOOL_STATUS_MAP = {
     "_default": "正在思考…",
 }
 
+# 工具名 → 简短标签（前端气泡上的 tool tag 用）
+TOOL_LABEL_MAP = {
+    "search_products": "搜索鞋款",
+    "analyze_outfit": "分析穿搭",
+    "compare_shoes": "对比鞋款",
+    "ask_clarify": "追问需求",
+    "search_knowledge": "查阅知识",
+    "_default": "思考中",
+}
+
 
 # ===== 4. 核心：处理用户消息（非流式）=====
+
 def process_message(conversation_id: str | None, user_message: str,
                     products: list[dict], user_context: str = "",
                     history: list[dict] | None = None) -> dict:
@@ -156,16 +230,25 @@ def process_message(conversation_id: str | None, user_message: str,
     # 场景：Python 服务刚重启，内存字典清空了，但 MySQL 里有记录
     if len(history_list) == 0 and history:
         _restore_history(history_list, history)
-    retriever = ShoeRetriever(products)
+    retriever = get_retriever(products)
     tools = create_tools(products, retriever, _get_knowledge_base())
     system_prompt = _build_system_prompt(user_context)
     agent = create_agent(llm, tools, system_prompt=system_prompt)
+    agent = agent.with_config({"recursion_limit": 15})
 
     messages = history_list + [HumanMessage(content=user_message)]
 
     try:
         result = agent.invoke({"messages": messages})
         output = result["messages"][-1].content
+        # 从 LangChain 消息中提取工具调用（非流式不走 astream_events）
+        for msg in result.get("messages", []):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    trace_ctx._tool_calls.append({
+                        "name": tc.get("name", "unknown"),
+                        "duration_ms": 0,  # 非流式拿不到中间耗时
+                    })
     except Exception as e:
         output = "AI 暂时不可用，请稍后再试。"
         error_msg = str(e)
@@ -180,6 +263,7 @@ def process_message(conversation_id: str | None, user_message: str,
     history_list.append(HumanMessage(content=user_message))
     history_list.append(AIMessage(content=output))
     _trim_history(history_list)
+    _save_history(conversation_id, history_list)
 
     reply, action, results, follow_ups = _parse_reply(output)
 
@@ -208,10 +292,11 @@ async def stream_agent(conversation_id: str | None, user_message: str,
     # Python 内存中没有这个对话的历史 → 从传入的持久化历史恢复
     if len(history_list) == 0 and history:
         _restore_history(history_list, history)
-    retriever = ShoeRetriever(products)
+    retriever = get_retriever(products)
     tools = create_tools(products, retriever, _get_knowledge_base())
     system_prompt = _build_system_prompt(user_context)
     agent = create_agent(streaming_llm, tools, system_prompt=system_prompt)
+    agent = agent.with_config({"recursion_limit": 15})
 
     input_messages = history_list + [HumanMessage(content=user_message)]
     full_text = ""
@@ -228,7 +313,8 @@ async def stream_agent(conversation_id: str | None, user_message: str,
                 tool_name = event.get("name", "")
                 trace_ctx.on_tool_start(tool_name)
                 status = TOOL_STATUS_MAP.get(tool_name, TOOL_STATUS_MAP["_default"])
-                yield f"data: {json.dumps({'status': status})}\n\n"
+                tool_label = TOOL_LABEL_MAP.get(tool_name, TOOL_LABEL_MAP["_default"])
+                yield f"data: {json.dumps({'tool_start': tool_name, 'tool_label': tool_label, 'status': status})}\n\n"
 
             # LLM 产出 token → 逐字推送 + 标记首 token
             elif kind == "on_chat_model_stream":
@@ -243,7 +329,9 @@ async def stream_agent(conversation_id: str | None, user_message: str,
             # 工具执行结束 → 通知前端 + 追踪记录耗时
             elif kind == "on_tool_end":
                 trace_ctx.on_tool_end()
-                yield f"data: {json.dumps({'status': ''})}\n\n"
+                tool_name = event.get("name", "")
+                tool_label = TOOL_LABEL_MAP.get(tool_name, TOOL_LABEL_MAP["_default"])
+                yield f"data: {json.dumps({'tool_end': tool_name, 'tool_label': tool_label, 'status': ''})}\n\n"
 
     except Exception as e:
         error_msg = str(e)
@@ -262,6 +350,7 @@ async def stream_agent(conversation_id: str | None, user_message: str,
     history_list.append(HumanMessage(content=user_message))
     history_list.append(AIMessage(content=full_text))
     _trim_history(history_list)
+    _save_history(conversation_id, history_list)
 
     # 解析并发送最终结果（含 followUps）
     reply, action, results, follow_ups = _parse_reply(full_text)

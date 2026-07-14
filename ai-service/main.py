@@ -1,3 +1,5 @@
+# FastAPI 入口，暴露 3 个 HTTP 端点：
+
 import json
 import os
 os.environ.pop("SSLKEYLOGFILE", None)  # 消除 Wireshark SSL 抓包的环境变量干扰
@@ -9,7 +11,7 @@ from schemas import ChatRequest, ChatResponse
 from agent import process_message, stream_agent
 from trace import TraceStore
 
-app = FastAPI(title="AI 鞋类导购助手", version="3.0")
+app = FastAPI(title="AI 鞋类推荐助手", version="3.0")
 
 # CORS 中间件 —— 允许前端跨域访问 SSE 流（浏览器同源策略要求）
 app.add_middleware(
