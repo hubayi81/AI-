@@ -12,8 +12,10 @@ from langchain_core.messages import HumanMessage, AIMessage
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, REDIS_HOST, REDIS_PORT, REDIS_DB
 from retriever import ShoeRetriever, get_retriever
 from tools import create_tools
+from db import load_feedback_weights
 from knowledge_base import KnowledgeBase
 from trace import TraceContext
+from reply_parser import parse_reply
 
 # 知识库：启动时加载一次，常驻内存，所有请求共享
 # 为什么用全局变量？—— 知识库的 markdown 文件不会在运行时变化，
@@ -93,7 +95,7 @@ followUps 是 2-3 个自然的后续追问，帮助用户进一步筛选，例�
 - 每款鞋的介绍控制在 2-3 句，简洁直接
 - 不要写长篇大论，不要过度推销
 
-score 是 0-100 的匹配度分数，最多推荐 5 款，按分数从高到低排序。
+score 字段由系统根据品类/预算/属性匹配度实时算出，已附在商品数据中。推荐时直接采用该 score，禁止自行编造或修改；按分数从高到低排序，最多 5 款。
 即使只有部分匹配的商品也要推荐，不要因为结果少就不推。
 
 {user_context}"""
@@ -231,7 +233,8 @@ def process_message(conversation_id: str | None, user_message: str,
     if len(history_list) == 0 and history:
         _restore_history(history_list, history)
     retriever = get_retriever(products)
-    tools = create_tools(products, retriever, _get_knowledge_base())
+    tools = create_tools(products, retriever, _get_knowledge_base(),
+                         load_feedback_weights())
     system_prompt = _build_system_prompt(user_context)
     agent = create_agent(llm, tools, system_prompt=system_prompt)
     agent = agent.with_config({"recursion_limit": 15})
@@ -265,7 +268,7 @@ def process_message(conversation_id: str | None, user_message: str,
     _trim_history(history_list)
     _save_history(conversation_id, history_list)
 
-    reply, action, results, follow_ups = _parse_reply(output)
+    reply, action, results, follow_ups = parse_reply(output)
 
     return {
         "conversation_id": conversation_id,
@@ -293,7 +296,8 @@ async def stream_agent(conversation_id: str | None, user_message: str,
     if len(history_list) == 0 and history:
         _restore_history(history_list, history)
     retriever = get_retriever(products)
-    tools = create_tools(products, retriever, _get_knowledge_base())
+    tools = create_tools(products, retriever, _get_knowledge_base(),
+                         load_feedback_weights())
     system_prompt = _build_system_prompt(user_context)
     agent = create_agent(streaming_llm, tools, system_prompt=system_prompt)
     agent = agent.with_config({"recursion_limit": 15})
@@ -353,42 +357,10 @@ async def stream_agent(conversation_id: str | None, user_message: str,
     _save_history(conversation_id, history_list)
 
     # 解析并发送最终结果（含 followUps）
-    reply, action, results, follow_ups = _parse_reply(full_text)
+    reply, action, results, follow_ups = parse_reply(full_text)
     yield f"data: {json.dumps({'done': True, 'conversation_id': conversation_id, 'reply': full_text, 'action': action, 'results': results, 'followUps': follow_ups})}\n\n"
 
 
 # ===== 6. 回复解析 =====
-def _parse_reply(raw_reply: str) -> tuple[str, str, list | None, list | None]:
-    """从 LLM 回复中提取推荐 JSON + 追问建议"""
-    action = "chat"
-    results = None
-    follow_ups = None
-
-    try:
-        if "```json" in raw_reply:
-            json_str = raw_reply.rsplit("```json", 1)[1].split("```", 1)[0].strip()
-        elif raw_reply.strip().startswith("{") and "recommendations" in raw_reply:
-            json_str = raw_reply.strip()
-        elif "productId" in raw_reply:
-            start = raw_reply.index("{")
-            end = raw_reply.rindex("}") + 1
-            json_str = raw_reply[start:end]
-        else:
-            return raw_reply, "chat", None, None
-
-        parsed = json.loads(json_str)
-        if "recommendations" in parsed and len(parsed["recommendations"]) > 0:
-            results = parsed["recommendations"]
-            if "compare" in json_str.lower() or "对比" in raw_reply:
-                action = "compare"
-            elif "outfit" in json_str.lower() or "穿搭" in raw_reply:
-                action = "outfit"
-            else:
-                action = "recommend"
-        # 提取追问建议
-        if "followUps" in parsed and isinstance(parsed["followUps"], list):
-            follow_ups = parsed["followUps"][:3]  # 最多 3 个
-    except (json.JSONDecodeError, ValueError, KeyError):
-        pass
-
-    return raw_reply, action, results, follow_ups
+# 解析逻辑已抽到 reply_parser.parse_reply（纯函数、可单测、无模块级副作用）。
+# 这里只保留对它的调用，避免 Agent 模块在导入时构造 LLM 客户端导致测试脆弱。

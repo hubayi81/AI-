@@ -10,16 +10,28 @@ from fastapi.responses import StreamingResponse
 from schemas import ChatRequest, ChatResponse
 from agent import process_message, stream_agent
 from trace import TraceStore
+from db import load_products  # 架构 A：Python 直连 MySQL 加载商品
 
 app = FastAPI(title="AI 鞋类推荐助手", version="3.0")
 
-# CORS 中间件 —— 允许前端跨域访问 SSE 流（浏览器同源策略要求）
+# CORS 中间件
+# 注意：当前架构下浏览器只与 Java 后端（同源 /api/...）通信，
+# Python 由 Java 服务端调用（AiAgentClient），所以浏览器实际不会触发这里。
+# 但若以后改为浏览器直连 Python，必须显式列出来源——
+# allow_credentials=True 与 allow_origins=["*"] 同时出现是非法组合
+# （浏览器会直接拒绝），故不允许用 "*"。
+_CORS_ORIGINS = [
+    o.strip()
+    for o in os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080")
+    .split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -32,7 +44,8 @@ def health():
 @app.post("/api/ai/agent/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     """Agent 对话入口（非流式，保留兼容）"""
-    products = [p.model_dump() for p in req.products]
+    # 架构 A：优先用请求传入的商品（兼容旧路径），为空则 Python 直连 MySQL 加载
+    products = [p.model_dump() for p in req.products] if req.products else load_products()
 
     result = process_message(
         conversation_id=req.conversation_id,
@@ -57,7 +70,8 @@ def chat(req: ChatRequest):
 @app.post("/api/ai/agent/chat/stream")
 async def chat_stream(req: ChatRequest):
     """Agent 流式对话入口 —— 返回 SSE（Server-Sent Events）流"""
-    products = [p.model_dump() for p in req.products]
+    # 架构 A：优先用请求传入的商品（兼容旧路径），为空则 Python 直连 MySQL 加载
+    products = [p.model_dump() for p in req.products] if req.products else load_products()
 
     # StreamingResponse 配合异步生成器，每个 yield 立即推送到前端
     return StreamingResponse(

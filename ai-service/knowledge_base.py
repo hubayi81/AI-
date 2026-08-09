@@ -16,6 +16,8 @@ from pathlib import Path
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from fusion import rrf_fuse
+
 # ─── 全局 embedding 模型 ───
 _model = None
 
@@ -281,18 +283,13 @@ class KnowledgeBase:
                     bm25: list[tuple[int, float]], top_k: int
                     ) -> list[tuple[int, float]]:
         """Reciprocal Rank Fusion：向量结果和 BM25 结果加权合并。
-        对每个出现过的文档，计算 RRF 分数 = vector_weight/rank + bm25_weight/rank。"""
-        scores: dict[int, float] = {}
-        k = 60  # RRF 平滑常数
-
-        for rank, (idx, _) in enumerate(vec):
-            scores[idx] = scores.get(idx, 0) + self.VECTOR_WEIGHT / (rank + k)
-
-        for rank, (idx, _) in enumerate(bm25):
-            scores[idx] = scores.get(idx, 0) + self.BM25_WEIGHT / (rank + k)
-
-        merged = sorted(scores.items(), key=lambda x: -x[1])
-        return [(idx, s) for idx, s in merged[:top_k * 2]]
+        实现在 fusion.rrf_fuse —— 评测脚本用的是同一个函数，
+        保证"评测的东西"和"线上跑的东西"是同一份代码。"""
+        return rrf_fuse(
+            [[idx for idx, _ in vec], [idx for idx, _ in bm25]],
+            weights=[self.VECTOR_WEIGHT, self.BM25_WEIGHT],
+            top_n=top_k * 2,
+        )
 
     def _rerank(self, fused: list[tuple[int, float]]
                 ) -> list[tuple[int, float, str]]:
@@ -302,10 +299,16 @@ class KnowledgeBase:
         3. 返回排序结果"""
         filtered: list[tuple[int, float, str]] = []
 
-        for idx, score in fused:
+        if not fused:
+            return []
+        # RRF 分数天然极小（k=60 时约 weight/(rank+60) ≈ 0.01~0.02），
+        # 必须先归一化到 0-1 才能和 MIN_SCORE(0.35) 比较，否则所有结果都会被阈值丢弃。
+        max_score = max(s for _, s in fused) or 1.0
+
+        for idx, raw in fused:
+            score = raw / max_score  # 归一化到 0-1，rank0 的块为 1.0
             if score < self.MIN_SCORE:
                 continue
-            # 归一化 score 到 0-1（近似，实际 RRF 分数很小）
             filtered.append((idx, score, self.chunks[idx]["source"]))
 
         # 来源多样性重排
@@ -334,10 +337,11 @@ class KnowledgeBase:
         for idx, score, src in reranked[:top_k]:
             chunk = self.chunks[idx].copy()
 
-            # 置信度分级
-            if score >= 0.5:
+            # 置信度分级（score 已是 0-1 归一化值；RRF 区间窄，故用相对阈值）
+            # 注：更可信的置信度（向量余弦 + 命中路数）将在评分系统化阶段重做
+            if score >= 0.9:
                 confidence = "high"
-            elif score >= 0.35:
+            elif score >= 0.6:
                 confidence = "medium"
             else:
                 confidence = "low"

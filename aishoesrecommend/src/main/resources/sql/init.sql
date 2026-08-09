@@ -79,9 +79,23 @@ CREATE TABLE ai_feedback (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     conversation_id VARCHAR(50),
+    reply_hash VARCHAR(64) NOT NULL DEFAULT '' COMMENT 'ai_reply 的 SHA-256，消息级去重键',
     user_message TEXT COMMENT '用户当时的提问',
     ai_reply TEXT COMMENT 'AI 的回复',
     feedback VARCHAR(10) NOT NULL COMMENT 'like 或 dislike',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_conv (user_id, conversation_id)
+    INDEX idx_user_conv (user_id, conversation_id),
+    UNIQUE KEY uk_user_conv_reply (user_id, conversation_id, reply_hash)
+);
+
+-- 反馈-商品关联表：把 👍/👎 归因到具体商品，供排序侧聚合
+CREATE TABLE ai_feedback_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    feedback_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    feedback VARCHAR(10) NOT NULL COMMENT 'like 或 dislike',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_product (product_id),
+    INDEX idx_feedback_id (feedback_id)
 );

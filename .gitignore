@@ -31,3 +31,7 @@ Thumbs.db
 # AI 服务追踪数据
 traces.db
 项目代码/
+项目代码.zip
+
+# WorkBuddy 本地记忆 / 运行态（不进仓库）
+.workbuddy/

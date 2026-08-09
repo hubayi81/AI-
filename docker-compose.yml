@@ -49,6 +49,11 @@ services:
       REDIS_HOST: redis                  # Docker 内用容器名做 DNS
       REDIS_PORT: "6379"
       REDIS_DB: "0"
+      MYSQL_HOST: mysql                  # 架构 A：Python 直连 MySQL 读商品
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aishoes}
     ports:
       - "5000:5000"
     depends_on:

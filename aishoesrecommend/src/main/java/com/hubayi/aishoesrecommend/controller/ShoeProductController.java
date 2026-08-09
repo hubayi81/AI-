@@ -74,9 +74,7 @@ public class ShoeProductController {
     // ===== AI 对话入口（非流式）=====
     @PostMapping("/api/ai/chat")
     public Result<AiChatResponse> aiChat(@RequestBody AiChatRequest req, HttpSession session) {
-        List<ShoeProduct> products = service.getAllProducts();
-        List<Map<String, Object>> productMaps = toProductMaps(products);
-
+        // 架构 A：商品由 Python 直连 MySQL 加载，Java 不再查/传全量商品
         // 根据用户收藏计算画像，使 AI 推荐更个性化
         String userContext = buildUserContext(session);
 
@@ -84,7 +82,7 @@ public class ShoeProductController {
         List<Map<String, String>> history = loadConversationHistory(session, req.getConversationId());
 
         AiChatResponse resp = aiAgentClient.chat(
-                req.getConversationId(), req.getMessage(), productMaps, userContext, history);
+                req.getConversationId(), req.getMessage(), null, userContext, history);
 
         return Result.success(resp);
     }
@@ -176,18 +174,15 @@ public class ShoeProductController {
     public void aiChatStream(@RequestBody AiChatRequest req,
                              HttpServletResponse response,
                              HttpSession session) {
-        List<ShoeProduct> products = service.getAllProducts();
-        List<Map<String, Object>> productMaps = toProductMaps(products);
-
+        // 架构 A：商品由 Python 直连 MySQL 加载，Java 不再查/传全量商品
         // 根据用户收藏计算画像
         String userContext = buildUserContext(session);
 
         // 从 MySQL 加载对话历史，传给 Python 用于恢复 Agent 记忆
-        // 为什么在 Java 端加载而不是 Python 自己查？—— Python 不连 MySQL，保持架构简单
         List<Map<String, String>> history = loadConversationHistory(session, req.getConversationId());
 
         aiAgentClient.chatStream(req.getConversationId(), req.getMessage(),
-                productMaps, userContext, history, response);
+                null, userContext, history, response);
     }
 
     // ---- 工具方法 ----

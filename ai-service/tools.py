@@ -4,51 +4,62 @@ import json
 
 from langchain.tools import tool
 
+from scoring import score_product
 
-def create_tools(products: list[dict], retriever=None, knowledge_base=None):
+# 品牌中英文映射：用户可能说"阿迪达斯"，数据库存的是"Adidas"
+# 为什么不全用中文？—— 种子数据用的是国际通用英文品牌名
+BRAND_MAP = {
+    "阿迪达斯": "adidas", "adidas": "adidas",
+    "耐克": "nike", "nike": "nike",
+    "匡威": "converse", "converse": "converse",
+    "范斯": "vans", "vans": "vans",
+    "亚瑟士": "asics", "asics": "asics",
+    "卡骆驰": "crocs", "crocs": "crocs",
+    "on": "on",   # On 跑鞋，中英文同名
+}
+
+
+def apply_filters(items: list[dict], **kwargs) -> list[dict]:
+    """对候选商品列表施加结构化过滤（gender/category/brand/price）。
+
+    抽到模块顶层：① 便于单测；② create_tools 内的 search_knowledge 等
+    不需要重复一份。
     """
-    工厂函数：接收本次请求的商品列表 + 语义检索器 + 知识库，
+    results = []
+    for p in items:
+        if kwargs.get("category") and p.get("category", "") != kwargs["category"]:
+            continue
+        if kwargs.get("brand"):
+            brand_input = kwargs["brand"].lower()
+            brand_db = p.get("brand", "").lower()
+            # 先尝试映射（中文→英文），再比较
+            brand_mapped = BRAND_MAP.get(brand_input, brand_input)
+            if brand_db != brand_mapped:
+                continue
+        if kwargs.get("gender"):
+            gender_map = {"男": "male", "女": "female", "通用": "unisex", "中性": "unisex"}
+            filter_gender = gender_map.get(kwargs["gender"], kwargs["gender"])
+            if p.get("gender", "") != filter_gender:
+                continue
+        if kwargs.get("max_price") and kwargs["max_price"] > 0:
+            if p.get("price", 0) > kwargs["max_price"]:
+                continue
+        if kwargs.get("min_price") and kwargs["min_price"] > 0:
+            if p.get("price", 0) < kwargs["min_price"]:
+                continue
+        results.append(p)
+    return results
+
+
+def create_tools(products: list[dict], retriever=None, knowledge_base=None,
+                 feedback_weights: dict[str, float] | None = None):
+    """
+    工厂函数：接收本次请求的商品列表 + 语义检索器 + 知识库 + 反馈权重，
     返回工具函数列表（数据通过闭包注入，不用全局变量）
     knowledge_base 为 None 时（知识库未加载），search_knowledge 工具不会返回
+    feedback_weights 为 None/空 时，评分退化为纯内容匹配（冷启动）
     """
-
-    def _apply_filters(items: list[dict], **kwargs) -> list[dict]:
-        """对候选商品列表施加结构化过滤（gender/category/brand/price）"""
-        # 品牌中英文映射：用户可能说"阿迪达斯"，数据库存的是"Adidas"
-        # 为什么不全用中文？—— 种子数据用的是国际通用英文品牌名
-        BRAND_MAP = {
-            "阿迪达斯": "adidas", "adidas": "adidas",
-            "耐克": "nike", "nike": "nike",
-            "匡威": "converse", "converse": "converse",
-            "范斯": "vans", "vans": "vans",
-            "亚瑟士": "asics", "asics": "asics",
-            "卡骆驰": "crocs", "crocs": "crocs",
-            "on": "on",   # On 跑鞋，中英文同名
-        }
-        results = []
-        for p in items:
-            if kwargs.get("category") and p.get("category", "") != kwargs["category"]:
-                continue
-            if kwargs.get("brand"):
-                brand_input = kwargs["brand"].lower()
-                brand_db = p.get("brand", "").lower()
-                # 先尝试映射（中文→英文），再比较
-                brand_mapped = BRAND_MAP.get(brand_input, brand_input)
-                if brand_db != brand_mapped:
-                    continue
-            if kwargs.get("gender"):
-                gender_map = {"男": "male", "女": "female", "通用": "unisex", "中性": "unisex"}
-                filter_gender = gender_map.get(kwargs["gender"], kwargs["gender"])
-                if p.get("gender", "") != filter_gender:
-                    continue
-            if kwargs.get("max_price") and kwargs["max_price"] > 0:
-                if p.get("price", 0) > kwargs["max_price"]:
-                    continue
-            if kwargs.get("min_price") and kwargs["min_price"] > 0:
-                if p.get("price", 0) < kwargs["min_price"]:
-                    continue
-            results.append(p)
-        return results
+    feedback_weights = feedback_weights or {}
 
     @tool
     def search_products(keyword: str = "", category: str = "", brand: str = "",
@@ -68,7 +79,7 @@ def create_tools(products: list[dict], retriever=None, knowledge_base=None):
         else:
             candidates = products
 
-        items = _apply_filters(
+        items = apply_filters(
             candidates,
             category=category, brand=brand,
             gender=gender, min_price=min_price, max_price=max_price
@@ -76,7 +87,22 @@ def create_tools(products: list[dict], retriever=None, knowledge_base=None):
         # 空结果时返回提示，防止 Agent 无限重试
         if not items:
             return json.dumps({"empty": True, "hint": "没有匹配的商品，请放宽条件或告知用户"}, ensure_ascii=False)
-        return json.dumps(items[:8], ensure_ascii=False)
+        # 系统计算匹配度评分（LLM 只解释，不编造）
+        # 注意：先对**全部**过滤结果打分再排序取 Top8，而不是先截断再打分——
+        # 否则反馈权重永远只能在检索器给出的前 8 名内部微调，无法把
+        # 检索排名靠后但用户口碑好的商品提上来，反馈闭环就等于没接。
+        scored = []
+        for p in items:
+            p = dict(p)
+            p["score"] = score_product(
+                keyword or "", p,
+                category=category, brand=brand, gender=gender,
+                min_price=min_price, max_price=max_price,
+                feedback_weight=feedback_weights.get(str(p.get("id")), 0.0),
+            )
+            scored.append(p)
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        return json.dumps(scored[:8], ensure_ascii=False)
 
     @tool
     def analyze_outfit(top_wear: str = "", bottom_wear: str = "",

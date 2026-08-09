@@ -1261,7 +1261,10 @@ createApp({
         async submitFeedback(msg, type) {
             if (msg._feedback===type) return; msg._feedback = type
             const idx = this.chatMessages.indexOf(msg); const prev = idx>0 ? this.chatMessages[idx-1] : null
-            fetch('/api/user/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId||'',user_message:prev&&prev.role==='user'?prev.content:'',ai_reply:msg.content||'',feedback:type})}).catch(()=>{})
+            // 把本条回复实际展示的商品 id 一并上报：
+            // 没有归因，后端只知道"这次回答不好"，不知道"哪双鞋推错了"，反馈就无法进入排序。
+            const productIds = (msg.results||[]).map(r=>r.productId).filter(v=>typeof v==='number'&&v>0)
+            fetch('/api/user/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId||'',user_message:prev&&prev.role==='user'?prev.content:'',ai_reply:msg.content||'',feedback:type,product_ids:productIds})}).catch(()=>{})
         },
         esc(text) { const d=document.createElement('div'); d.textContent=text; return d.innerHTML },
         fmtToken(text) { return this.esc(text).replace(/\n/g,'<br>') },

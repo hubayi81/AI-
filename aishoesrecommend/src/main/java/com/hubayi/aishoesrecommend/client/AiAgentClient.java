@@ -46,7 +46,8 @@ public class AiAgentClient {
             Map<String, Object> body = new HashMap<>();
             body.put("conversation_id", conversationId);
             body.put("message", message);
-            body.put("products", products);
+            // 架构 A：商品由 Python 直连 MySQL 加载，Java 不再每请求全量搬运 353 商品
+            // body.put("products", products);
             // 用户画像传给 Python，使推荐更个性化（如收藏的鞋品牌/品类）
             body.put("user_context", userContext != null ? userContext : "");
             // 对话历史传给 Python 用于恢复记忆（Python 重启后也能接上）
@@ -95,11 +96,7 @@ public class AiAgentClient {
                 }
             }
             json.append("]");
-            json.append(",\"products\":[");
-            for (int i = 0; i < products.size(); i++) {
-                if (i > 0) json.append(",");
-                json.append(productToJson(products.get(i)));
-            }
+            // 架构 A：商品由 Python 直连 MySQL 加载，不再手写序列化搬运
             json.append("]}");
 
             // 2. 向 Python 发起 POST 请求

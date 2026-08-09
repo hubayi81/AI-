@@ -22,7 +22,7 @@ class ChatRequest(BaseModel):
     """前端发来的请求"""
     conversation_id:str | None = None
     message:str
-    products:list[Product] = []
+    products:list[Product] | None = None  # 架构 A：可留空，Python 直连 MySQL 加载商品
     # 用户画像上下文（Java 端根据收藏/历史计算后传入，可为空）
     user_context:str = ""
     # 对话历史：Java 端从 MySQL 查出后传入，Python 用于恢复 Agent 记忆
