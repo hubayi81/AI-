@@ -74,6 +74,11 @@ public class ShoeProductController {
     // ===== AI 对话入口（非流式）=====
     @PostMapping("/api/ai/chat")
     public Result<AiChatResponse> aiChat(@RequestBody AiChatRequest req, HttpSession session) {
+        // AI 接口背后是付费 LLM，必须登录才能调用。
+        // 未登录直接放行 = 任何人都能匿名刷 token，成本和配额都不可控。
+        User user = (User) session.getAttribute("user");
+        if (user == null) return Result.error(401, "请先登录");
+
         // 架构 A：商品由 Python 直连 MySQL 加载，Java 不再查/传全量商品
         // 根据用户收藏计算画像，使 AI 推荐更个性化
         String userContext = buildUserContext(session);
@@ -174,6 +179,21 @@ public class ShoeProductController {
     public void aiChatStream(@RequestBody AiChatRequest req,
                              HttpServletResponse response,
                              HttpSession session) {
+        // 流式端点同样是付费资源，必须鉴权。
+        // 它是 void 方法，不能像普通接口那样 return Result.error(401)，
+        // 所以直接写 401 状态码 + JSON 体；前端 fetch 拿到 !r.ok 会走降级/跳登录分支。
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            try {
+                response.getWriter().write("{\"code\":401,\"message\":\"请先登录\",\"data\":null}");
+            } catch (Exception ignored) {
+                // 写不进去说明连接已经断了，无需处理
+            }
+            return;
+        }
+
         // 架构 A：商品由 Python 直连 MySQL 加载，Java 不再查/传全量商品
         // 根据用户收藏计算画像
         String userContext = buildUserContext(session);

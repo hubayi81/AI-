@@ -1203,6 +1203,8 @@ createApp({
             if (!this.conversationId) { this.conversationId = this.currentConversationId || this.generateConvId(); this.currentConversationId = this.conversationId }
             try {
                 const r = await fetch('/api/ai/chat/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:this.conversationId,message:msg})})
+                // 401 = 登录态失效。直接跳登录，别降级成"AI 不可用"误导用户。
+                if (r.status === 401) { window.location.href = '/login.html'; return }
                 if (!r.ok) throw new Error('SSE fail')
                 const reader = r.body.getReader(); const decoder = new TextDecoder(); let buffer = ''
                 const aiIdx = this.chatMessages.push({role:'ai',content:'',action:'chat',results:[],followUps:[],_tools:[]}) - 1
